@@ -3,3 +3,27 @@ dist/
 .DS_Store
 *.log
 
+# Claude Code
+CLAUDE.md
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Coverage
+coverage/
+
+# Temp
+*.tmp
+*.temp
+
