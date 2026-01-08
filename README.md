@@ -137,6 +137,21 @@ Alebo cez CLI:
 codex mcp add slov-lex -- node /cesta/k/Slov-Lex_MCP/dist/index.js
 ```
 
+### Google Gemini CLI
+
+Pridajte do `~/.gemini/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "slov-lex": {
+      "command": "node",
+      "args": ["/cesta/k/Slov-Lex_MCP/dist/index.js"]
+    }
+  }
+}
+```
+
 ---
 
 ## Technológie
