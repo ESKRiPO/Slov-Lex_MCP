@@ -173,3 +173,9 @@ MIT
 ## Autor
 
 [ESKRiPO](https://github.com/ESKRiPO)
+
+---
+
+## Poďakovanie
+
+Vytvorené v spolupráci s [Desiatok.sk](https://desiatok.sk) - komunitnou AI daňovou kalkulačkou pre Slovensko.
