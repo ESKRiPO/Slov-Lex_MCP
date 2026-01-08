@@ -121,6 +121,22 @@ Pridajte do konfigurácie MCP serverov:
 }
 ```
 
+### OpenAI Codex CLI
+
+Pridajte do `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.slov-lex]
+command = "node"
+args = ["/cesta/k/Slov-Lex_MCP/dist/index.js"]
+```
+
+Alebo cez CLI:
+
+```bash
+codex mcp add slov-lex -- node /cesta/k/Slov-Lex_MCP/dist/index.js
+```
+
 ---
 
 ## Technológie
