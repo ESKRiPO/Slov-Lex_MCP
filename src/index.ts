@@ -17,14 +17,15 @@ function textResult(text: string) {
 
 const server = new McpServer({
   name: "slov-lex-mcp",
-  version: "0.1.0",
+  version: "1.1.0",
 });
 
 server.tool(
   "get_law",
+  "Získa základné informácie o zákone podľa čísla a roku (napr. 595/2003).",
   {
-    number: z.union([z.string(), z.number()]),
-    year: z.union([z.string(), z.number()]),
+    number: z.union([z.string(), z.number()]).describe("Číslo zákona"),
+    year: z.union([z.string(), z.number()]).describe("Rok vydania"),
   },
   async ({ number, year }) => {
     const cislo = `${String(number).trim()}/${String(year).trim()}`;
@@ -47,10 +48,11 @@ server.tool(
 
 server.tool(
   "get_version",
+  "Získa úplné znenie zákona k danému dátumu (alebo aktuálne znenie).",
   {
-    law: z.string(),
-    date: z.string().optional(),
-    max_chars: z.number().int().positive().optional(),
+    law: z.string().describe("Číslo zákona (napr. '595/2003') alebo IRI"),
+    date: z.string().optional().describe("Dátum znenia vo formáte YYYY-MM-DD (voliteľné, default: dnes)"),
+    max_chars: z.number().int().positive().optional().describe("Max počet znakov (default: 20000)"),
   },
   async ({ law, date, max_chars }) => {
     const { baseIri } = parseLawBaseIri(law);
@@ -72,10 +74,11 @@ server.tool(
 
 server.tool(
   "get_paragraph",
+  "Získa konkrétny paragraf zo zákona k danému dátumu.",
   {
-    law: z.string(),
-    paragraph: z.string(),
-    date: z.string().optional(),
+    law: z.string().describe("Číslo zákona (napr. '595/2003') alebo IRI"),
+    paragraph: z.string().describe("Číslo paragrafu (napr. '3' alebo '§3')"),
+    date: z.string().optional().describe("Dátum znenia vo formáte YYYY-MM-DD (voliteľné, default: dnes)"),
   },
   async ({ law, paragraph, date }) => {
     const { baseIri } = parseLawBaseIri(law);
@@ -101,9 +104,10 @@ server.tool(
 
 server.tool(
   "search",
+  "Vyhľadá zákony v Zbierke zákonov SR podľa kľúčových slov.",
   {
-    query: z.string(),
-    limit: z.number().int().positive().max(25).optional(),
+    query: z.string().describe("Hľadaný výraz"),
+    limit: z.number().int().positive().max(25).optional().describe("Max počet výsledkov (default: 10, max: 25)"),
   },
   async ({ query, limit }) => {
     const items = await searchNavrhy(query, limit ?? 10);
