@@ -151,7 +151,7 @@ codex mcp add slov-lex -- node /cesta/k/Slov-Lex_MCP/dist/index.js
 
 ## Licencia
 
-ISC
+MIT
 
 ---
 

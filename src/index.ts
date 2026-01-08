@@ -48,10 +48,10 @@ server.tool(
 
 server.tool(
   "get_version",
-  "Získa úplné znenie zákona k danému dátumu (alebo aktuálne znenie).",
+  "Získa úplné znenie zákona. DÔLEŽITÉ: Bez parametra 'date' vráti AKTUÁLNE platné znenie (k dnešnému dňu). Zákony sa menia v čase - pre historické prípady (napr. daňové priznanie za rok 2023) použi parameter 'date' s príslušným dátumom.",
   {
     law: z.string().describe("Číslo zákona (napr. '595/2003') alebo IRI"),
-    date: z.string().optional().describe("Dátum znenia vo formáte YYYY-MM-DD (voliteľné, default: dnes)"),
+    date: z.string().optional().describe("Dátum znenia YYYY-MM-DD. Bez tohto parametra = dnešný dátum. Pre historické prípady zadaj relevantný dátum (napr. '2023-12-31' pre rok 2023)."),
     max_chars: z.number().int().positive().optional().describe("Max počet znakov (default: 20000)"),
   },
   async ({ law, date, max_chars }) => {
@@ -74,11 +74,11 @@ server.tool(
 
 server.tool(
   "get_paragraph",
-  "Získa konkrétny paragraf zo zákona k danému dátumu.",
+  "Získa konkrétny paragraf zo zákona. DÔLEŽITÉ: Bez parametra 'date' vráti AKTUÁLNE platné znenie (k dnešnému dňu). Pre historické prípady použi parameter 'date'.",
   {
     law: z.string().describe("Číslo zákona (napr. '595/2003') alebo IRI"),
     paragraph: z.string().describe("Číslo paragrafu (napr. '3' alebo '§3')"),
-    date: z.string().optional().describe("Dátum znenia vo formáte YYYY-MM-DD (voliteľné, default: dnes)"),
+    date: z.string().optional().describe("Dátum znenia YYYY-MM-DD. Bez tohto parametra = dnešný dátum. Pre historické prípady zadaj relevantný dátum."),
   },
   async ({ law, paragraph, date }) => {
     const { baseIri } = parseLawBaseIri(law);
