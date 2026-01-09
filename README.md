@@ -162,6 +162,4 @@ MIT
 
 ## Poďakovanie
 
-<a href="https://desiatok.sk">
-  <img src="https://desiatok.sk/images/desiatok-icon.svg" alt="Desiatok.sk" width="24" height="24" style="vertical-align: middle;">
-</a> Vytvorené v spolupráci s <a href="https://desiatok.sk"><strong>Desiatok.sk</strong></a> - komunitnou AI daňovou kalkulačkou pre Slovensko.
+<a href="https://desiatok.sk"><img src="desiatok-icon.png" alt="Desiatok.sk" width="20"></a> Vytvorené v spolupráci s <a href="https://desiatok.sk"><strong>Desiatok.sk</strong></a> - komunitnou AI daňovou kalkulačkou pre Slovensko.
