@@ -162,4 +162,4 @@ MIT
 
 ## Poďakovanie
 
-<a href="https://desiatok.sk"><img src=".github/desiatok-icon.png" alt="Desiatok.sk" width="20"></a> Vytvorené v spolupráci s <a href="https://desiatok.sk"><strong>Desiatok.sk</strong></a> - komunitnou AI daňovou kalkulačkou pre Slovensko.
+🧮 Vytvorené v spolupráci s [**Desiatok.sk**](https://desiatok.sk) - komunitnou AI daňovou kalkulačkou pre Slovensko.
