@@ -28,3 +28,6 @@ coverage/
 *.temp
 
 .directory
+
+# Output files
+out.*
