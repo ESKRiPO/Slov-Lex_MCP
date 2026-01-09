@@ -10,7 +10,7 @@
 
 ## Popis
 
-Slov-Lex MCP je Model Context Protocol server, ktorý umožňuje AI asistentom pristupovať k právnym predpisom zo [Slov-Lex](https://www.slov-lex.sk/) - oficiálneho právneho a informačného portálu Ministerstva spravodlivosti SR.
+Slov-Lex MCP je Model Context Protocol server, ktorý umožňuje AI asistentom pristupovať k právnym predpisom zo [Slov-Lex.sk](https://www.slov-lex.sk/) - oficiálneho právneho a informačného portálu Ministerstva spravodlivosti SR.
 
 ### Funkcie
 
