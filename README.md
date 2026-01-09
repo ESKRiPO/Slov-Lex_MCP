@@ -86,22 +86,6 @@ npm run build
 npm start
 ```
 
-### Príklady
-
-```javascript
-// Získať informácie o zákone o dani z príjmov
-get_law({ number: 595, year: 2003 })
-
-// Získať § 15 zo zákona k 1.1.2026
-get_paragraph({ law: "595/2003", paragraph: "§15", date: "2026-01-01" })
-
-// Načítať celé znenie zákona
-get_version({ law: "460/1992", max_chars: 50000 })
-
-// Vyhľadať zákony obsahujúce "daň"
-search({ query: "daň z príjmov", limit: 5 })
-```
-
 ---
 
 ## MCP Konfigurácia
