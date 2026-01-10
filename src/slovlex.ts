@@ -163,7 +163,7 @@ export async function getPortalHtml(versionIri: string) {
 export async function searchNavrhy(query: string, limit: number) {
   const q = query.trim();
   if (!q) return [];
-  const key = `${q}::${limit}`;
+  const key = `navrhy:${q}::${limit}`;
   const cached = searchCache.get(key);
   if (cached) return cached;
   const url =
@@ -172,4 +172,29 @@ export async function searchNavrhy(query: string, limit: number) {
   const items = await httpGetJson<NavrhyItem[]>(url);
   searchCache.set(key, items);
   return items;
+}
+
+type RozsireneSearchResult = {
+  iri: string;
+  cislo?: string;
+  nazov?: string;
+  nadpisy?: string[];
+  typPredp_value?: string;
+  ucinnyOd?: string;
+  ucinnyDo?: string;
+};
+
+export async function searchRozsirene(query: string, limit: number): Promise<RozsireneSearchResult[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const key = `rozsirene:${q}::${limit}`;
+  const cached = searchCache.get(key);
+  if (cached) return cached as unknown as RozsireneSearchResult[];
+  const url =
+    `${API_BASE}/vyhladavanie/predpisZbierky/rozsirene?` +
+    `text=${encodeURIComponent(q)}&rows=${encodeURIComponent(String(limit))}`;
+  const data = await httpGetJson<RozsireneResponse>(url);
+  const results = data.docs ?? [];
+  searchCache.set(key, results as unknown as NavrhyItem[]);
+  return results;
 }

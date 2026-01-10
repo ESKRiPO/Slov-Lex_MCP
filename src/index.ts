@@ -8,6 +8,7 @@ import {
   getVersionIriForDate,
   parseLawBaseIri,
   searchNavrhy,
+  searchRozsirene,
 } from "./slovlex.js";
 import { extractParagrafFromPortalHtml, renderParagraf, renderWholeLawText } from "./portal.js";
 
@@ -104,13 +105,36 @@ server.tool(
 
 server.tool(
   "search",
-  "Vyhľadá zákony v Zbierke zákonov SR podľa kľúčových slov.",
+  "Vyhľadá zákony v Zbierke zákonov SR podľa kľúčových slov. Režim 'autocomplete' hľadá v názvoch zákonov (rýchle). Režim 'fulltext' hľadá aj v nadpisoch paragrafov (pomalšie, ale komplexnejšie).",
   {
     query: z.string().describe("Hľadaný výraz"),
+    mode: z.enum(["autocomplete", "fulltext"]).optional().describe("Režim vyhľadávania: 'autocomplete' (default) = rýchle vyhľadávanie v názvoch, 'fulltext' = vyhľadávanie aj v nadpisoch paragrafov"),
     limit: z.number().int().positive().max(25).optional().describe("Max počet výsledkov (default: 10, max: 25)"),
   },
-  async ({ query, limit }) => {
-    const items = await searchNavrhy(query, limit ?? 10);
+  async ({ query, mode, limit }) => {
+    const searchMode = mode ?? "autocomplete";
+    const maxResults = limit ?? 10;
+
+    if (searchMode === "fulltext") {
+      const results = await searchRozsirene(query, maxResults);
+      if (!results.length) return textResult("Bez výsledkov.");
+      const out = results
+        .map((r) => {
+          const header = `${r.cislo ?? r.iri} - ${r.nazov ?? ""}`.trim();
+          const matchingNadpisy = r.nadpisy?.filter((n) =>
+            n.toLowerCase().includes(query.toLowerCase())
+          );
+          const nadpisyInfo = matchingNadpisy?.length
+            ? `\nZhodné nadpisy: ${matchingNadpisy.slice(0, 5).join(", ")}${matchingNadpisy.length > 5 ? "..." : ""}`
+            : "";
+          return `${header}${nadpisyInfo}\nIRI: ${r.iri}`;
+        })
+        .join("\n\n");
+      return textResult(out);
+    }
+
+    // autocomplete mode
+    const items = await searchNavrhy(query, maxResults);
     if (!items.length) return textResult("Bez výsledkov.");
     const out = items
       .map((i) => {

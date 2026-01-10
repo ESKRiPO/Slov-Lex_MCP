@@ -2,7 +2,7 @@
 
 **MCP server pre prístup k Zbierke zákonov Slovenskej republiky**
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/ESKRiPO/Slov-Lex_MCP)
+[![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)](https://github.com/ESKRiPO/Slov-Lex_MCP)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.25-green.svg)](https://modelcontextprotocol.io/)
 
@@ -29,7 +29,7 @@ Slov-Lex MCP je Model Context Protocol server, ktorý umožňuje AI asistentom p
 | `get_law` | Získa základné informácie o zákone podľa čísla a roku |
 | `get_version` | Načíta úplné znenie zákona k danému dátumu |
 | `get_paragraph` | Extrahuje konkrétny paragraf zo zákona |
-| `search` | Vyhľadá zákony podľa kľúčových slov |
+| `search` | Vyhľadá zákony podľa kľúčových slov (autocomplete alebo fulltext) |
 
 ### Parametre
 
@@ -57,7 +57,12 @@ Slov-Lex MCP je Model Context Protocol server, ktorý umožňuje AI asistentom p
 | Parameter | Typ | Povinný | Popis |
 |-----------|-----|---------|-------|
 | `query` | string | áno | Hľadaný výraz |
+| `mode` | string | nie | Režim vyhľadávania: `autocomplete` (default) alebo `fulltext` |
 | `limit` | number | nie | Max počet výsledkov (default: 10, max: 25) |
+
+**Režimy vyhľadávania:**
+- `autocomplete` - rýchle vyhľadávanie v názvoch zákonov
+- `fulltext` - vyhľadávanie aj v nadpisoch paragrafov (napr. "Hromadné prepúšťanie")
 
 ---
 
