@@ -2,7 +2,7 @@
 
 **MCP server pre prístup k Zbierke zákonov Slovenskej republiky**
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/ESKRiPO/Slov-Lex_MCP)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/ESKRiPO/Slov-Lex_MCP)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.25-green.svg)](https://modelcontextprotocol.io/)
 
@@ -17,6 +17,7 @@ Slov-Lex MCP je Model Context Protocol server, ktorý umožňuje AI asistentom p
 - Vyhľadávanie zákonov podľa čísla, roku alebo kľúčových slov
 - Načítanie úplného znenia zákona k ľubovoľnému dátumu účinnosti
 - Extrahovanie konkrétnych paragrafov
+- **Podpora tabuliek** - tabuľky v zákonoch sa renderujú do markdown formátu
 - Inteligentné cachovanie pre rýchle odpovede
 
 ---
@@ -60,11 +61,28 @@ Slov-Lex MCP je Model Context Protocol server, ktorý umožňuje AI asistentom p
 
 ---
 
-## Inštalácia
+## Rýchla inštalácia (One-liner)
+
+Povedz svojmu AI asistentovi:
+
+```
+Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/INSTALL.md
+```
+
+| AI Systém | Podrobné inštrukcie |
+|-----------|---------------------|
+| Claude Code / Claude Desktop | [.claude/INSTALL.md](.claude/INSTALL.md) |
+| OpenAI Codex CLI | [.codex/INSTALL.md](.codex/INSTALL.md) |
+| Google Gemini CLI | [.gemini/INSTALL.md](.gemini/INSTALL.md) |
+| Cursor / VS Code | [.cursor/INSTALL.md](.cursor/INSTALL.md) |
+
+---
+
+## Manuálna inštalácia
 
 ```bash
-git clone https://github.com/ESKRiPO/Slov-Lex_MCP.git
-cd Slov-Lex_MCP
+git clone https://github.com/ESKRiPO/Slov-Lex_MCP.git ~/.local/share/slov-lex-mcp
+cd ~/.local/share/slov-lex-mcp
 npm install
 npm run build
 ```

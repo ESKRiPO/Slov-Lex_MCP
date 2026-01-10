@@ -5,8 +5,73 @@ function norm(s: string) {
   return s.replace(/\s+/g, " ").trim();
 }
 
-function directChildText($el: cheerio.Cheerio<AnyNode>) {
+function renderTable($: cheerio.CheerioAPI, $table: cheerio.Cheerio<AnyNode>): string {
+  const rows: string[][] = [];
+  $table.find("tr").each((_, tr) => {
+    const cells: string[] = [];
+    $(tr)
+      .find("td, th")
+      .each((__, cell) => {
+        cells.push(norm($(cell).text()));
+      });
+    if (cells.length > 0) rows.push(cells);
+  });
+  if (rows.length === 0) return "";
+
+  // Calculate column widths
+  const colWidths: number[] = [];
+  for (const row of rows) {
+    row.forEach((cell, i) => {
+      colWidths[i] = Math.max(colWidths[i] ?? 0, cell.length);
+    });
+  }
+
+  // Render table as text
+  const lines: string[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const paddedCells = row.map((cell, j) => cell.padEnd(colWidths[j]));
+    lines.push("| " + paddedCells.join(" | ") + " |");
+    // Add separator after header row
+    if (i === 0) {
+      lines.push("| " + colWidths.map((w) => "-".repeat(w)).join(" | ") + " |");
+    }
+  }
+  return lines.join("\n");
+}
+
+function getMainText($el: cheerio.Cheerio<AnyNode>) {
+  // Get text only from div.text (the main text at the beginning of the unit)
   return norm($el.children("div.text").first().text());
+}
+
+function getTrailingContent($: cheerio.CheerioAPI, $el: cheerio.Cheerio<AnyNode>, indent: number): string[] {
+  // Get content from div.text2 (appears AFTER child elements like písmenká/body)
+  // May contain tables or continuation text
+  const lines: string[] = [];
+
+  $el.children("div.text2").each((_, text2) => {
+    const $text2 = $(text2);
+    // Check for tables
+    const $table = $text2.find("table").first();
+    if ($table.length > 0) {
+      const tableText = renderTable($, $table);
+      if (tableText) {
+        // Add table lines with proper indentation
+        for (const line of tableText.split("\n")) {
+          lines.push(" ".repeat(indent) + line);
+        }
+      }
+    } else {
+      // Fallback to plain text
+      const plainText = norm($text2.text());
+      if (plainText) {
+        lines.push(" ".repeat(indent) + plainText);
+      }
+    }
+  });
+
+  return lines;
 }
 
 function labelFromId(prefix: string, id: string | undefined) {
@@ -41,7 +106,7 @@ function renderUnit(
     label = norm($el.children("div.bodOznacenie").first().text()) || "?";
   }
 
-  const text = directChildText($el);
+  const text = getMainText($el);
   const lines: string[] = [];
   if (label || text) {
     lines.push(`${" ".repeat(indent)}${[label, text].filter(Boolean).join(" ")}`.trimEnd());
@@ -61,6 +126,9 @@ function renderUnit(
         : indent + 2;
     lines.push(...renderUnit($, child, childIndent, depth + 1));
   });
+
+  // Add trailing content (div.text2) AFTER child elements
+  lines.push(...getTrailingContent($, $el, indent));
 
   return lines;
 }
