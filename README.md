@@ -2,7 +2,7 @@
 
 **MCP server pre prístup k Zbierke zákonov Slovenskej republiky**
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/ESKRiPO/Slov-Lex_MCP)
+[![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)](https://github.com/ESKRiPO/Slov-Lex_MCP)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.25-green.svg)](https://modelcontextprotocol.io/)
 
