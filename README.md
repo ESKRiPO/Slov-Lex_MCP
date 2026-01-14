@@ -18,6 +18,7 @@ Slov-Lex MCP je Model Context Protocol server, ktorý umožňuje AI asistentom p
 - Načítanie úplného znenia zákona k ľubovoľnému dátumu účinnosti
 - Extrahovanie konkrétnych paragrafov
 - **Podpora tabuliek** - tabuľky v zákonoch sa renderujú do markdown formátu
+- **RSS feed** - sledovanie posledných 20 vyhlásených predpisov
 - Inteligentné cachovanie pre rýchle odpovede
 
 ---
@@ -30,6 +31,7 @@ Slov-Lex MCP je Model Context Protocol server, ktorý umožňuje AI asistentom p
 | `get_version` | Načíta úplné znenie zákona k danému dátumu |
 | `get_paragraph` | Extrahuje konkrétny paragraf zo zákona |
 | `search` | Vyhľadá zákony podľa kľúčových slov (autocomplete alebo fulltext) |
+| `get_recent` | Získa posledných 20 vyhlásených predpisov z RSS feedu |
 
 ### Parametre
 
@@ -63,6 +65,12 @@ Slov-Lex MCP je Model Context Protocol server, ktorý umožňuje AI asistentom p
 **Režimy vyhľadávania:**
 - `autocomplete` - rýchle vyhľadávanie v názvoch zákonov
 - `fulltext` - vyhľadávanie aj v nadpisoch paragrafov (napr. "Hromadné prepúšťanie")
+
+#### `get_recent`
+
+Tento nástroj nemá žiadne parametre. Vracia posledných 20 vyhlásených predpisov z RSS feedu Slov-Lex.
+
+> **Poznámka:** RSS feed obsahuje len 20 najnovších položiek, nie kompletný archív.
 
 ---
 
