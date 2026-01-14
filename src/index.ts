@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import {
   getPortalHtml,
+  getRecentPredpisy,
   getRozsireneByCislo,
   getRozsireneByIri,
   getVersionIriForDate,
@@ -144,6 +145,24 @@ server.tool(
       })
       .join("\n\n");
     return textResult(out);
+  },
+);
+
+server.tool(
+  "get_recent",
+  "Získa posledných 20 vyhlásených predpisov z RSS feedu Slov-Lex. POZOR: RSS feed obsahuje len 20 najnovších položiek, nie kompletný archív.",
+  {},
+  async () => {
+    const items = await getRecentPredpisy();
+    if (!items.length) return textResult("RSS feed je prázdny.");
+    const out = items
+      .map((i, idx) => {
+        const date = i.pubDate ? ` (${i.pubDate})` : "";
+        const creator = i.creator ? `\nVydal: ${i.creator}` : "";
+        return `${idx + 1}. ${i.cislo}${date}\n${i.nazov}${creator}\n${i.link}`;
+      })
+      .join("\n\n");
+    return textResult(`Posledných 20 vyhlásených predpisov:\n\n${out}`);
   },
 );
 

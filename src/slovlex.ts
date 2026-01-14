@@ -1,5 +1,6 @@
 import { LRUCache } from "lru-cache";
 import { chromium } from "playwright";
+import * as cheerio from "cheerio";
 import { httpGetJson, httpGetText } from "./http.js";
 
 const API_BASE = "https://api-gateway.slov-lex.sk";
@@ -197,4 +198,46 @@ export async function searchRozsirene(query: string, limit: number): Promise<Roz
   const results = data.docs ?? [];
   searchCache.set(key, results as unknown as NavrhyItem[]);
   return results;
+}
+
+const RSS_URL = "https://vyhladavanie.slov-lex.sk/rss/predpisZbierky";
+
+export type RecentPredpis = {
+  cislo: string;
+  nazov: string;
+  link: string;
+  pubDate: string;
+  creator?: string;
+};
+
+const recentCache = new LRUCache<string, RecentPredpis[]>({
+  max: 1,
+  ttl: 1000 * 60 * 10, // 10 minút
+});
+
+/**
+ * Získa posledných 20 vyhlásených predpisov z RSS feedu Slov-Lex.
+ * POZOR: RSS feed obsahuje len 20 najnovších položiek, nie kompletný archív.
+ */
+export async function getRecentPredpisy(): Promise<RecentPredpis[]> {
+  const cached = recentCache.get("recent");
+  if (cached) return cached;
+
+  const xml = await httpGetText(RSS_URL);
+  const $ = cheerio.load(xml, { xmlMode: true });
+
+  const items: RecentPredpis[] = [];
+  $("item").each((_, el) => {
+    const $item = $(el);
+    items.push({
+      cislo: $item.find("description").text().trim(),
+      nazov: $item.find("title").text().trim(),
+      link: $item.find("link").text().trim(),
+      pubDate: $item.find("pubDate").text().trim(),
+      creator: $item.find("dc\\:creator").text().trim() || undefined,
+    });
+  });
+
+  recentCache.set("recent", items);
+  return items;
 }
