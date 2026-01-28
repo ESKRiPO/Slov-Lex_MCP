@@ -1,11 +1,11 @@
-# Slov-Lex MCP pre OpenAI Codex CLI
+# Slov-Lex MCP pre OpenAI Codex CLI (Codex CLI)
 
 ## Automatická inštalácia
 
 Povedz Codex:
 
 ```
-Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/INSTALL.md
+Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.codex/INSTALL.md
 ```
 
 ## Manuálna inštalácia
@@ -29,8 +29,10 @@ Alebo pridaj do `~/.codex/config.toml`:
 ```toml
 [mcp_servers.slov-lex]
 command = "node"
-args = ["~/.local/share/slov-lex-mcp/dist/index.js"]
+args = ["/home/<user>/.local/share/slov-lex-mcp/dist/index.js"]
 ```
+
+> Poznámka: V `config.toml` **nepoužívaj** `~` v ceste (tilda sa tu typicky neexpanduje). Použi plnú cestu ako vyššie.
 
 ### 3. Reštartuj Codex
 
@@ -45,8 +47,46 @@ codex
 - `get_paragraph` - Konkrétny paragraf
 - `search` - Vyhľadávanie zákonov
 
+## Overenie
+
+```bash
+codex mcp list
+codex mcp get slov-lex
+```
+
 ## Test
 
 ```
 Čo hovorí § 33 zákona 595/2003 o daňovom bonuse?
 ```
+
+## Troubleshooting
+
+### `MCP startup failed: No such file or directory (os error 2)`
+
+Najčastejšie príčiny:
+
+1) **Zlá konfigurácia `command`/`args` v `~/.codex/config.toml`**
+
+✅ Správne:
+```toml
+[mcp_servers.slov-lex]
+command = "node"
+args = ["/home/<user>/.local/share/slov-lex-mcp/dist/index.js"]
+```
+
+❌ Nesprávne (celé ako jeden string):
+```toml
+[mcp_servers.slov-lex]
+command = "node /home/<user>/.local/share/slov-lex-mcp/dist/index.js"
+```
+
+2) **Cesta v `args` neexistuje**
+
+- Over:
+  - či si spustil `npm run build`
+  - či existuje `dist/index.js`
+
+3) **Použitá `~` v ceste v config súbore**
+
+- V TOML configoch sa `~` typicky neexpanduje → použi plnú cestu.

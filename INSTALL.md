@@ -55,16 +55,7 @@ claude mcp add slov-lex -- node ~/.local/share/slov-lex-mcp/dist/index.js
 
 Súbor: `~/.codex/config.toml`
 
-```toml
-[mcp_servers.slov-lex]
-command = "node"
-args = ["~/.local/share/slov-lex-mcp/dist/index.js"]
-```
-
-Alebo cez CLI:
-```bash
-codex mcp add slov-lex -- node ~/.local/share/slov-lex-mcp/dist/index.js
-```
+Pozri [.codex/INSTALL.md](.codex/INSTALL.md) (canonical inštrukcie + troubleshooting).
 
 ---
 

@@ -6,6 +6,15 @@ Formát je založený na [Keep a Changelog](https://keepachangelog.com/sk/1.0.0/
 
 ---
 
+## [1.2.3] - 2026-01-28
+
+### Zmenené
+
+- Dokumentácia pre OpenAI Codex CLI je canonical v `.codex/INSTALL.md` (odstránené duplicity v `README.md`/`INSTALL.md`)
+- Pridané troubleshooting pre chybu `MCP startup failed: No such file or directory (os error 2)` (správne rozdelenie `command`/`args` a poznámka o `~`)
+
+---
+
 ## [1.2.0] - 2025-01-10
 
 ### Pridané
