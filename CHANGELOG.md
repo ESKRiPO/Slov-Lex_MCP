@@ -6,6 +6,16 @@ Formát je založený na [Keep a Changelog](https://keepachangelog.com/sk/1.0.0/
 
 ---
 
+## [1.2.4] - 2026-03-27
+
+### Opravené
+
+- `get_version` už renderuje celé znenie zo skutočných paragrafov a neberie navigačné bloky zo Slov-Lex portálu
+- Sieťové volania na Slov-Lex majú timeout a limitovaný retry pri dočasných zlyhaniach
+- Smoke test teraz overuje aj render celého znenia a dostupnosť RSS feedu
+
+---
+
 ## [1.2.3] - 2026-01-28
 
 ### Zmenené

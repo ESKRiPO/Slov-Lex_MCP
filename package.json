@@ -1,6 +1,6 @@
 {
   "name": "slov-lex_mcp",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "MCP server for Slov-Lex (Zbierka zákonov SR): load laws, versions and paragraphs.",
   "type": "module",
   "main": "dist/index.js",

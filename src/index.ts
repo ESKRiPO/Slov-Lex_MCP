@@ -19,7 +19,7 @@ function textResult(text: string) {
 
 const server = new McpServer({
   name: "slov-lex-mcp",
-  version: "1.2.3",
+  version: "1.2.4",
 });
 
 server.tool(

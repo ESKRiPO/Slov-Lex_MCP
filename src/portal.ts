@@ -159,7 +159,9 @@ export function renderParagraf($: cheerio.CheerioAPI, $par: cheerio.Cheerio<AnyN
 export function renderWholeLawText(portalHtml: string, maxChars: number) {
   const $ = cheerio.load(portalHtml);
   const parts: string[] = [];
-  $("div.paragraf").each((_, el) => {
+  // The portal HTML also contains summary/navigation paragraf blocks without ids.
+  // Restrict whole-law rendering to the actual paragraf content nodes.
+  $("div.paragraf[id^='paragraf-']").each((_, el) => {
     const $par = $(el);
     const text = renderParagraf($, $par);
     if (text.trim()) parts.push(text.trim());
