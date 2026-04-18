@@ -3,8 +3,8 @@
 **MCP server pre prístup k Zbierke zákonov Slovenskej republiky**
 
 [![Version](https://img.shields.io/badge/version-1.2.4-blue.svg)](https://github.com/ESKRiPO/Slov-Lex_MCP)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
-[![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.25-green.svg)](https://modelcontextprotocol.io/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue.svg)](https://www.typescriptlang.org/)
+[![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.29-green.svg)](https://modelcontextprotocol.io/)
 
 ---
 
@@ -160,8 +160,8 @@ Pridajte do `~/.gemini/settings.json`:
 ## Technológie
 
 - **Runtime:** Node.js 22+
-- **Jazyk:** TypeScript 5.9
-- **MCP SDK:** @modelcontextprotocol/sdk 1.25
+- **Jazyk:** TypeScript 6.0
+- **MCP SDK:** @modelcontextprotocol/sdk 1.29
 - **HTML parsing:** Cheerio
 - **Fallback browser:** Playwright
 
