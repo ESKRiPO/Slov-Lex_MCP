@@ -1,11 +1,11 @@
-# Slov-Lex MCP pre Cursor
+# Slov-Lex MCP pre VS Code
 
 ## Automatická inštalácia
 
-Povedz Cursoru:
+Povedz VS Code agentovi:
 
 ```text
-Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.cursor/INSTALL.md
+Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.vscode/INSTALL.md
 ```
 
 ## Manuálna inštalácia
@@ -20,12 +20,18 @@ npm install && npm run build
 
 ### 2. Konfigurácia MCP
 
-Pridaj do `~/.cursor/mcp.json` pre globálne použitie alebo do projektového `.cursor/mcp.json`:
+Vo VS Code môžeš použiť:
+
+- workspace config: `.vscode/mcp.json`
+- user profile config: otvor cez `MCP: Open User Configuration`
+
+Príklad `.vscode/mcp.json`:
 
 ```json
 {
-  "mcpServers": {
+  "servers": {
     "slov-lex": {
+      "type": "stdio",
       "command": "node",
       "args": ["/home/<user>/.local/share/slov-lex-mcp/dist/index.js"]
     }
@@ -33,9 +39,16 @@ Pridaj do `~/.cursor/mcp.json` pre globálne použitie alebo do projektového `.
 }
 ```
 
+> VS Code používa top-level kľúč `servers`, nie `mcpServers`.
+>
 > V JSON konfigurácii používaj plnú absolútnu cestu, nie `~`.
 
-### 3. Reštartuj Cursor
+### 3. Overenie
+
+Vo VS Code použi:
+
+- `MCP: List Servers`
+- `MCP: Open Workspace Folder MCP Configuration`
 
 ## Dostupné nástroje
 
@@ -50,7 +63,3 @@ Pridaj do `~/.cursor/mcp.json` pre globálne použitie alebo do projektového `.
 ```text
 Čo hovorí § 33 zákona 595/2003 o daňovom bonuse?
 ```
-
-## VS Code
-
-Pre VS Code použi samostatný návod: [.vscode/INSTALL.md](../.vscode/INSTALL.md)

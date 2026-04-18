@@ -76,18 +76,28 @@ Tento nástroj nemá žiadne parametre. Vracia posledných 20 vyhlásených pred
 
 ## Rýchla inštalácia (One-liner)
 
-Povedz svojmu AI asistentovi:
+Použi client-specific one-liner podľa svojho AI asistenta:
 
-```
-Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/INSTALL.md
-```
+- Claude Code / Claude Desktop:
+  `Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.claude/INSTALL.md`
+- OpenAI Codex CLI:
+  `Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.codex/INSTALL.md`
+- Google Gemini CLI:
+  `Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.gemini/INSTALL.md`
+- Cursor:
+  `Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.cursor/INSTALL.md`
+- VS Code:
+  `Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.vscode/INSTALL.md`
+
+Podrobné návody:
 
 | AI Systém | Podrobné inštrukcie |
 |-----------|---------------------|
 | Claude Code / Claude Desktop | [.claude/INSTALL.md](.claude/INSTALL.md) |
 | OpenAI Codex CLI | [.codex/INSTALL.md](.codex/INSTALL.md) |
 | Google Gemini CLI | [.gemini/INSTALL.md](.gemini/INSTALL.md) |
-| Cursor / VS Code | [.cursor/INSTALL.md](.cursor/INSTALL.md) |
+| Cursor | [.cursor/INSTALL.md](.cursor/INSTALL.md) |
+| VS Code | [.vscode/INSTALL.md](.vscode/INSTALL.md) |
 
 ---
 
@@ -121,16 +131,27 @@ npm start
 
 ## MCP Konfigurácia
 
-### Claude Desktop / Claude Code
+### Claude Code
 
-Pridajte do konfigurácie MCP serverov:
+Odporúčaná registrácia cez CLI:
+
+```bash
+claude mcp add --scope user slov-lex -- node "$HOME/.local/share/slov-lex-mcp/dist/index.js"
+```
+
+> `--scope user` spraví server dostupný naprieč projektmi. Ak ho vynecháš, Claude Code použije lokálny scope.
+
+### Claude Desktop
+
+Pridajte do `~/.claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "slov-lex": {
+      "type": "stdio",
       "command": "node",
-      "args": ["/cesta/k/Slov-Lex_MCP/dist/index.js"]
+      "args": ["/home/<user>/.local/share/slov-lex-mcp/dist/index.js"]
     }
   }
 }
@@ -138,18 +159,61 @@ Pridajte do konfigurácie MCP serverov:
 
 ### OpenAI Codex CLI
 
-Podrobné a **canonical** inštrukcie sú v [.codex/INSTALL.md](.codex/INSTALL.md) (vrátane troubleshootingu pre `os error 2`).
+Odporúčaná registrácia cez CLI:
+
+```bash
+codex mcp add slov-lex -- node "$HOME/.local/share/slov-lex-mcp/dist/index.js"
+```
+
+Podrobné a **canonical** inštrukcie sú v [.codex/INSTALL.md](.codex/INSTALL.md) vrátane troubleshootingu pre `os error 2`.
 
 ### Google Gemini CLI
 
-Pridajte do `~/.gemini/settings.json`:
+Odporúčaná registrácia cez CLI:
+
+```bash
+gemini mcp add --scope user slov-lex node "$HOME/.local/share/slov-lex-mcp/dist/index.js"
+```
+
+Alebo pridajte do `~/.gemini/settings.json`:
 
 ```json
 {
   "mcpServers": {
     "slov-lex": {
       "command": "node",
-      "args": ["/cesta/k/Slov-Lex_MCP/dist/index.js"]
+      "args": ["/home/<user>/.local/share/slov-lex-mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+### Cursor
+
+Pridajte do `~/.cursor/mcp.json` alebo projektového `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "slov-lex": {
+      "command": "node",
+      "args": ["/home/<user>/.local/share/slov-lex-mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+### VS Code
+
+Pridajte do `.vscode/mcp.json` v projekte alebo do user profile `mcp.json`:
+
+```json
+{
+  "servers": {
+    "slov-lex": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/home/<user>/.local/share/slov-lex-mcp/dist/index.js"]
     }
   }
 }

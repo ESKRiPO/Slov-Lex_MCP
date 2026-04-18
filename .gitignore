@@ -9,7 +9,8 @@ AGENTS.md
 
 # IDE
 .idea/
-.vscode/
+.vscode/*
+!.vscode/INSTALL.md
 *.swp
 *.swo
 
