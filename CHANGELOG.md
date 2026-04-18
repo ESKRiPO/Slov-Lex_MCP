@@ -6,6 +6,21 @@ Formát je založený na [Keep a Changelog](https://keepachangelog.com/sk/1.0.0/
 
 ---
 
+## [1.2.5] - 2026-04-18
+
+### Zmenené
+
+- Aktualizované runtime a dev dependencies na novšie kompatibilné verzie vrátane `@modelcontextprotocol/sdk 1.29`, `TypeScript 6.0` a novších verzií `playwright`, `cheerio`, `lru-cache` a `zod`
+- Po upgrade je projekt bez známych `npm audit` zraniteľností
+
+### Opravené
+
+- Inštalačné návody pre MCP klientov sú zosúladené s aktuálnymi konfiguráciami pre Claude Code, Claude Desktop, Codex CLI, Gemini CLI, Cursor a VS Code
+- VS Code dokumentácia už používa správny formát `.vscode/mcp.json` s top-level kľúčom `servers`
+- One-linery v dokumentácii už smerujú na client-specific `INSTALL.md` súbory namiesto generického zastaraného postupu
+
+---
+
 ## [1.2.4] - 2026-03-27
 
 ### Opravené

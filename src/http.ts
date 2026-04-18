@@ -7,7 +7,7 @@ export type HttpOptions = {
 
 const DEFAULT_HEADERS: Record<string, string> = {
   "user-agent":
-    "slov-lex-mcp/1.2.4 (+https://github.com/ESKRiPO/Slov-Lex_MCP) Mozilla/5.0",
+    "slov-lex-mcp/1.2.5 (+https://github.com/ESKRiPO/Slov-Lex_MCP) Mozilla/5.0",
   accept: "*/*",
 };
 
