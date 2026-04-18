@@ -78,16 +78,35 @@ Tento nástroj nemá žiadne parametre. Vracia posledných 20 vyhlásených pred
 
 Použi client-specific one-liner podľa svojho AI asistenta:
 
-- Claude Code / Claude Desktop:
-  `Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.claude/INSTALL.md`
-- OpenAI Codex CLI:
-  `Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.codex/INSTALL.md`
-- Google Gemini CLI:
-  `Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.gemini/INSTALL.md`
-- Cursor:
-  `Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.cursor/INSTALL.md`
-- VS Code:
-  `Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.vscode/INSTALL.md`
+### Claude Code / Claude Desktop
+
+```bash
+Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.claude/INSTALL.md
+```
+
+### OpenAI Codex CLI
+
+```bash
+Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.codex/INSTALL.md
+```
+
+### Google Gemini CLI
+
+```bash
+Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.gemini/INSTALL.md
+```
+
+### Cursor
+
+```bash
+Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.cursor/INSTALL.md
+```
+
+### VS Code
+
+```bash
+Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.vscode/INSTALL.md
+```
 
 Podrobné návody:
 
