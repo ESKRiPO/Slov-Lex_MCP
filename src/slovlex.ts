@@ -1,206 +1,258 @@
-import { LRUCache } from "lru-cache";
-import { chromium } from "playwright";
+import { existsSync } from "node:fs";
 import * as cheerio from "cheerio";
+import { LRUCache } from "lru-cache";
+import { z } from "zod";
 import { httpGetJson, httpGetText } from "./http.js";
 
 const API_BASE = "https://api-gateway.slov-lex.sk";
 const STATIC_BASE = "https://static.slov-lex.sk/static";
+const PORTAL_BASE = "https://www.slov-lex.sk/ezbierky/pravne-predpisy";
+const RSS_URL = "https://vyhladavanie.slov-lex.sk/rss/predpisZbierky";
+const SLOVAK_TIME_ZONE = "Europe/Bratislava";
 
-type PredpisRozsireneDoc = {
-  iri: string;
-  cislo?: string;
-  nazov?: string;
-  typPredp_value?: string;
-  vyhlaseny?: string;
-  ucinnyOd?: string;
-  ucinnyDo?: string;
-  zodpovedajucaUcinnost?: string;
-  nadpisy?: string[];
-};
+const predpisRozsireneDocSchema = z
+  .object({
+    iri: z.string().min(1),
+    cislo: z.string().optional(),
+    nazov: z.string().optional(),
+    typPredp_value: z.string().optional(),
+    vyhlaseny: z.string().optional(),
+    ucinnyOd: z.string().optional(),
+    ucinnyDo: z.string().optional(),
+    zodpovedajucaUcinnost: z.string().optional(),
+    nadpisy: z.array(z.string()).optional(),
+  })
+  .passthrough();
 
-type RozsireneResponse = {
-  numFound: number;
-  start: number;
-  docs: PredpisRozsireneDoc[];
-};
+const rozsireneResponseSchema = z
+  .object({
+    docs: z.array(predpisRozsireneDocSchema),
+  })
+  .passthrough();
 
-type ZnenieResponse = {
-  numFound: number;
-  start: number;
-  numFoundExact?: boolean;
-  docs: Array<{ iri: string }>;
-};
+const znenieResponseSchema = z
+  .object({
+    docs: z.array(z.object({ iri: z.string().min(1) }).passthrough()),
+  })
+  .passthrough();
 
-type NavrhyItem = {
-  iri: string;
-  typ: string;
-  nazovPola?: string;
-  hodnotaPola?: string;
-  menovka?: string;
-  popis?: string;
-};
+const navrhyItemSchema = z
+  .object({
+    iri: z.string().min(1),
+    typ: z.string().optional(),
+    nazovPola: z.string().optional(),
+    hodnotaPola: z.string().optional(),
+    menovka: z.string().optional(),
+    popis: z.string().optional(),
+  })
+  .passthrough();
 
-const portalHtmlCache = new LRUCache<string, string>({
-  max: 64,
-  ttl: 1000 * 60 * 60 * 6,
-});
+const navrhyResponseSchema = z.array(navrhyItemSchema);
 
-const rozsireneCache = new LRUCache<string, PredpisRozsireneDoc>({
-  max: 256,
-  ttl: 1000 * 60 * 60 * 24,
-});
+export type PredpisRozsireneDoc = z.infer<typeof predpisRozsireneDocSchema>;
+export type NavrhyItem = z.infer<typeof navrhyItemSchema>;
+export type RozsireneSearchResult = PredpisRozsireneDoc;
 
-const searchCache = new LRUCache<string, NavrhyItem[]>({
-  max: 256,
-  ttl: 1000 * 60 * 10,
-});
+const MINUTE = 60_000;
+const createCache = <T extends {}>(max: number, ttl: number) => new LRUCache<string, T>({ max, ttl });
+const portalHtmlCache = createCache<string>(64, 6 * 60 * MINUTE);
+const rozsireneCache = createCache<PredpisRozsireneDoc>(256, 24 * 60 * MINUTE);
+const navrhySearchCache = createCache<NavrhyItem[]>(256, 10 * MINUTE);
+const rozsireneSearchCache = createCache<RozsireneSearchResult[]>(256, 10 * MINUTE);
 
-function toYyyyMmDd(date: Date) {
-  const yyyy = date.getUTCFullYear();
-  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(date.getUTCDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+async function cached<T extends {}>(cache: LRUCache<string, T>, key: string, load: () => Promise<T>): Promise<T> {
+  const cachedValue = cache.get(key);
+  if (cachedValue !== undefined) return cachedValue;
+  const value = await load();
+  cache.set(key, value);
+  return value;
+}
+
+function normalizeSearch(query: string, limit: number) {
+  const value = query.trim();
+  if (!value) return null;
+  return {
+    value,
+    normalizedValue: value.toLocaleLowerCase("sk-SK"),
+    limit: Math.min(Math.max(Math.floor(limit), 1), 25),
+  };
+}
+
+function parseUpstream<T>(schema: z.ZodType<T>, data: unknown, source: string): T {
+  const parsed = schema.safeParse(data);
+  if (parsed.success) return parsed.data;
+  const issue = parsed.error.issues[0];
+  const location = issue?.path.length ? issue.path.join(".") : "odpoveď";
+  throw new Error(`Slov-Lex vrátil neočakávaný formát (${source}, ${location}): ${issue?.message ?? "neznáma chyba"}.`);
+}
+
+export function isValidIsoDate(value: string) {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return false;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (year < 1000 || month < 1 || month > 12 || day < 1 || day > 31) return false;
+
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return parsed.getUTCFullYear() === year && parsed.getUTCMonth() === month - 1 && parsed.getUTCDate() === day;
+}
+
+export function todayInSlovakia(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: SLOVAK_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+export function getOfficialPortalUrl(versionIri: string) {
+  const normalizedIri = `/${versionIri.trim().replace(/^\/+|\/+$/g, "")}`;
+  return `${PORTAL_BASE}${normalizedIri}/`;
 }
 
 export function parseLawBaseIri(input: string) {
   const trimmed = input.trim();
-  const iriMatch = trimmed.match(/\/?SK\/ZZ\/(\d{4})\/(\d{1,6})/);
+  const iriMatch = trimmed.match(/\/SK\/ZZ\/(\d{4})\/(\d{1,6})(?:\/\d{8})?\/?(?:[?#].*)?$/i);
   if (iriMatch) {
     const year = iriMatch[1];
     const number = iriMatch[2];
     return { number, year, baseIri: `/SK/ZZ/${year}/${number}` };
   }
-  const cisloMatch = trimmed.match(/(\d{1,6})\s*\/\s*(\d{4})/);
-  if (cisloMatch) {
-    const number = cisloMatch[1];
-    const year = cisloMatch[2];
+
+  const citationMatch = trimmed.match(/^(\d{1,6})\s*\/\s*(\d{4})(?:\s+Z\.\s*z\.)?$/iu);
+  if (citationMatch) {
+    const number = citationMatch[1];
+    const year = citationMatch[2];
     return { number, year, baseIri: `/SK/ZZ/${year}/${number}` };
   }
-  throw new Error(
-    `Neviem parsovať zákon: "${input}". Očakávam napr. "595/2003" alebo "/SK/ZZ/2003/595".`,
-  );
+
+  throw new Error(`Neviem parsovať zákon: "${input}". Očakávam napr. "595/2003" alebo "/SK/ZZ/2003/595".`);
 }
 
-export async function getRozsireneByCislo(cislo: string) {
-  const cacheKey = `cislo:${cislo}`;
-  const cached = rozsireneCache.get(cacheKey);
-  if (cached) return cached;
-  const url = `${API_BASE}/vyhladavanie/predpisZbierky/rozsirene?cislo=${encodeURIComponent(cislo)}`;
-  const data = await httpGetJson<RozsireneResponse>(url);
-  const doc = data.docs?.[0];
-  if (!doc) throw new Error(`Predpis nenájdený: ${cislo}`);
-  rozsireneCache.set(cacheKey, doc);
-  return doc;
+async function getRozsirene(field: "cislo" | "iri", value: string) {
+  return cached(rozsireneCache, `${field}:${value}`, async () => {
+    const url = `${API_BASE}/vyhladavanie/predpisZbierky/rozsirene?` + `${field}=${encodeURIComponent(value)}`;
+    const raw = await httpGetJson<unknown>(url);
+    const data = parseUpstream(rozsireneResponseSchema, raw, url);
+    const matchingDoc = data.docs.find((item) =>
+      field === "iri" ? item.iri === value : item.cislo?.startsWith(value),
+    );
+    const doc = matchingDoc ?? data.docs[0];
+    if (!doc) {
+      const detail = field === "iri" ? ` (IRI): ${value}` : `: ${value}`;
+      throw new Error(`Predpis nenájdený${detail}`);
+    }
+    return doc;
+  });
 }
 
-export async function getRozsireneByIri(iri: string) {
-  const cacheKey = `iri:${iri}`;
-  const cached = rozsireneCache.get(cacheKey);
-  if (cached) return cached;
-  const url = `${API_BASE}/vyhladavanie/predpisZbierky/rozsirene?iri=${encodeURIComponent(iri)}`;
-  const data = await httpGetJson<RozsireneResponse>(url);
-  const doc = data.docs?.[0];
-  if (!doc) throw new Error(`Predpis nenájdený (iri): ${iri}`);
-  rozsireneCache.set(cacheKey, doc);
-  return doc;
+export function getRozsireneByCislo(cislo: string) {
+  return getRozsirene("cislo", cislo);
+}
+
+export function getRozsireneByIri(iri: string) {
+  return getRozsirene("iri", iri);
 }
 
 export async function getVersionIriForDate(baseIri: string, dateIso?: string) {
-  const date = dateIso?.trim() ? dateIso.trim() : toYyyyMmDd(new Date());
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    throw new Error(`Neplatný dátum: "${date}". Očakávam YYYY-MM-DD.`);
+  const date = dateIso?.trim() ? dateIso.trim() : todayInSlovakia();
+  if (!isValidIsoDate(date)) {
+    throw new Error(`Neplatný kalendárny dátum: "${date}". Očakávam YYYY-MM-DD.`);
   }
+
   const url =
     `${API_BASE}/vyhladavanie/predpisZbierky/znenie?` +
     `zodpovedajucaUcinnost=${encodeURIComponent(date)}&predpis=${encodeURIComponent(baseIri)}`;
-  const data = await httpGetJson<ZnenieResponse>(url);
-  const doc = data.docs?.[0];
+  const raw = await httpGetJson<unknown>(url);
+  const data = parseUpstream(znenieResponseSchema, raw, url);
+  const doc = data.docs[0];
   if (!doc?.iri) throw new Error(`Nenašlo sa znenie pre ${baseIri} k dátumu ${date}.`);
   return { versionIri: doc.iri, date };
 }
 
-export async function getPortalHtml(versionIri: string) {
-  const cached = portalHtmlCache.get(versionIri);
-  if (cached) return cached;
+async function getPortalHtmlWithPlaywright(url: string) {
+  const { chromium } = await import("playwright");
+  const executablePath = chromium.executablePath();
+  if (!existsSync(executablePath)) {
+    throw new Error(`Playwright Chromium nie je nainštalovaný (${executablePath}). Spusti "npm run install:browser".`);
+  }
 
-  const url = `${STATIC_BASE}${versionIri}.portal`;
+  const browser = await chromium.launch({ headless: true });
   try {
-    const html = await httpGetText(url, { headers: { accept: "text/html" } });
-    portalHtmlCache.set(versionIri, html);
-    return html;
-  } catch (err) {
-    // Fallback: load via Playwright (some environments block direct static fetch).
-    const browser = await chromium.launch({ headless: true });
-    try {
-      const page = await browser.newPage();
-      const htmlPromise = new Promise<string>((resolve, reject) => {
-        const timer = setTimeout(
-          () => reject(new Error("Playwright fallback timed out.")),
-          30_000,
-        );
-        page.on("response", async (res) => {
-          const resUrl = res.url();
-          if (resUrl === url) {
-            clearTimeout(timer);
-            try {
-              resolve(await res.text());
-            } catch (e) {
-              reject(e);
-            }
-          }
-        });
-      });
-      await page.goto("https://www.slov-lex.sk/ezbierky/", { waitUntil: "domcontentloaded" });
-      await page.evaluate((u) => fetch(u).catch(() => null), url);
-      const html = await htmlPromise;
-      portalHtmlCache.set(versionIri, html);
-      return html;
-    } finally {
-      await browser.close();
+    const page = await browser.newPage();
+    await page.goto("https://www.slov-lex.sk/ezbierky/", {
+      waitUntil: "domcontentloaded",
+      timeout: 30_000,
+    });
+
+    const responsePromise = page.waitForResponse((response) => response.url() === url, {
+      timeout: 30_000,
+    });
+    const [response] = await Promise.all([
+      responsePromise,
+      page.evaluate(async (targetUrl) => {
+        await fetch(targetUrl);
+      }, url),
+    ]);
+
+    if (!response.ok()) {
+      throw new Error(`Playwright fallback dostal HTTP ${response.status()} ${response.statusText()}.`);
     }
+    return await response.text();
+  } finally {
+    await browser.close();
   }
 }
 
+export async function getPortalHtml(versionIri: string) {
+  return cached(portalHtmlCache, versionIri, async () => {
+    const url = `${STATIC_BASE}${versionIri}.portal`;
+    try {
+      return await httpGetText(url, { headers: { accept: "text/html" } });
+    } catch (directError) {
+      try {
+        return await getPortalHtmlWithPlaywright(url);
+      } catch (fallbackError) {
+        const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+        throw new AggregateError(
+          [directError, fallbackError],
+          `Nepodarilo sa načítať portálové HTML pre ${versionIri} priamo ani cez Playwright fallback: ${fallbackMessage}`,
+        );
+      }
+    }
+  });
+}
+
 export async function searchNavrhy(query: string, limit: number) {
-  const q = query.trim();
-  if (!q) return [];
-  const key = `navrhy:${q}::${limit}`;
-  const cached = searchCache.get(key);
-  if (cached) return cached;
-  const url =
-    `${API_BASE}/vyhladavanie/predpisZbierky/navrhy?` +
-    `dopyt=${encodeURIComponent(q)}&rows=${encodeURIComponent(String(limit))}&typ=predpisZbierky`;
-  const items = await httpGetJson<NavrhyItem[]>(url);
-  searchCache.set(key, items);
-  return items;
+  const search = normalizeSearch(query, limit);
+  if (!search) return [];
+  const key = `navrhy:${search.normalizedValue}::${search.limit}`;
+  return cached(navrhySearchCache, key, async () => {
+    const url =
+      `${API_BASE}/vyhladavanie/predpisZbierky/navrhy?` +
+      `dopyt=${encodeURIComponent(search.value)}&rows=${search.limit}&typ=predpisZbierky`;
+    const raw = await httpGetJson<unknown>(url);
+    return parseUpstream(navrhyResponseSchema, raw, url);
+  });
 }
 
-type RozsireneSearchResult = {
-  iri: string;
-  cislo?: string;
-  nazov?: string;
-  nadpisy?: string[];
-  typPredp_value?: string;
-  ucinnyOd?: string;
-  ucinnyDo?: string;
-};
-
-export async function searchRozsirene(query: string, limit: number): Promise<RozsireneSearchResult[]> {
-  const q = query.trim();
-  if (!q) return [];
-  const key = `rozsirene:${q}::${limit}`;
-  const cached = searchCache.get(key);
-  if (cached) return cached as unknown as RozsireneSearchResult[];
-  const url =
-    `${API_BASE}/vyhladavanie/predpisZbierky/rozsirene?` +
-    `text=${encodeURIComponent(q)}&rows=${encodeURIComponent(String(limit))}`;
-  const data = await httpGetJson<RozsireneResponse>(url);
-  const results = data.docs ?? [];
-  searchCache.set(key, results as unknown as NavrhyItem[]);
-  return results;
+export async function searchRozsirene(query: string, limit: number) {
+  const search = normalizeSearch(query, limit);
+  if (!search) return [];
+  const key = `rozsirene:${search.normalizedValue}::${search.limit}`;
+  return cached(rozsireneSearchCache, key, async () => {
+    const url =
+      `${API_BASE}/vyhladavanie/predpisZbierky/rozsirene?` +
+      `text=${encodeURIComponent(search.value)}&rows=${search.limit}`;
+    const raw = await httpGetJson<unknown>(url);
+    return parseUpstream(rozsireneResponseSchema, raw, url).docs;
+  });
 }
-
-const RSS_URL = "https://vyhladavanie.slov-lex.sk/rss/predpisZbierky";
 
 export type RecentPredpis = {
   cislo: string;
@@ -210,34 +262,28 @@ export type RecentPredpis = {
   creator?: string;
 };
 
-const recentCache = new LRUCache<string, RecentPredpis[]>({
-  max: 1,
-  ttl: 1000 * 60 * 10, // 10 minút
-});
+const recentCache = createCache<RecentPredpis[]>(1, 10 * MINUTE);
 
-/**
- * Získa posledných 20 vyhlásených predpisov z RSS feedu Slov-Lex.
- * POZOR: RSS feed obsahuje len 20 najnovších položiek, nie kompletný archív.
- */
+/** Získa najviac 20 najnovších položiek z RSS feedu Slov-Lex. */
 export async function getRecentPredpisy(): Promise<RecentPredpis[]> {
-  const cached = recentCache.get("recent");
-  if (cached) return cached;
+  return cached(recentCache, "recent", async () => {
+    const xml = await httpGetText(RSS_URL);
+    const $ = cheerio.load(xml, { xmlMode: true });
+    const items: RecentPredpis[] = [];
 
-  const xml = await httpGetText(RSS_URL);
-  const $ = cheerio.load(xml, { xmlMode: true });
-
-  const items: RecentPredpis[] = [];
-  $("item").each((_, el) => {
-    const $item = $(el);
-    items.push({
-      cislo: $item.find("description").text().trim(),
-      nazov: $item.find("title").text().trim(),
-      link: $item.find("link").text().trim(),
-      pubDate: $item.find("pubDate").text().trim(),
-      creator: $item.find("dc\\:creator").text().trim() || undefined,
+    $("item").each((_, element) => {
+      if (items.length >= 20) return false;
+      const $item = $(element);
+      const item: RecentPredpis = {
+        cislo: $item.find("description").text().trim(),
+        nazov: $item.find("title").text().trim(),
+        link: $item.find("link").text().trim(),
+        pubDate: $item.find("pubDate").text().trim(),
+        creator: $item.find("dc\\:creator").text().trim() || undefined,
+      };
+      if (item.cislo && item.nazov && item.link) items.push(item);
     });
-  });
 
-  recentCache.set("recent", items);
-  return items;
+    return items;
+  });
 }

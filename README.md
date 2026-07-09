@@ -2,7 +2,7 @@
 
 **MCP server pre prístup k Zbierke zákonov Slovenskej republiky**
 
-[![Version](https://img.shields.io/badge/version-1.2.5-blue.svg)](https://github.com/ESKRiPO/Slov-Lex_MCP)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/ESKRiPO/Slov-Lex_MCP)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue.svg)](https://www.typescriptlang.org/)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.29-green.svg)](https://modelcontextprotocol.io/)
 
@@ -14,10 +14,11 @@ Slov-Lex MCP je Model Context Protocol server, ktorý umožňuje AI asistentom p
 
 ### Funkcie
 
-- Vyhľadávanie zákonov podľa čísla, roku alebo kľúčových slov
-- Načítanie úplného znenia zákona k ľubovoľnému dátumu účinnosti
-- Extrahovanie konkrétnych paragrafov
-- **Podpora tabuliek** - tabuľky v zákonoch sa renderujú do markdown formátu
+- Vyhľadávanie predpisov podľa čísla, roku alebo kľúčových slov
+- Stránkované načítanie znenia predpisu k ľubovoľnému dátumu účinnosti
+- Extrahovanie konkrétnych paragrafov vrátane paragrafov s priamym textom
+- Podpora paragrafov, novelizačných článkov, ústavných článkov a príloh
+- **Podpora tabuliek** - tabuľky v predpisoch sa renderujú do Markdown formátu
 - **RSS feed** - sledovanie posledných 20 vyhlásených predpisov
 - Inteligentné cachovanie pre rýchle odpovede
 
@@ -27,35 +28,46 @@ Slov-Lex MCP je Model Context Protocol server, ktorý umožňuje AI asistentom p
 
 | Nástroj | Popis |
 |---------|-------|
-| `get_law` | Získa základné informácie o zákone podľa čísla a roku |
-| `get_version` | Načíta úplné znenie zákona k danému dátumu |
-| `get_paragraph` | Extrahuje konkrétny paragraf zo zákona |
-| `search` | Vyhľadá zákony podľa kľúčových slov (autocomplete alebo fulltext) |
+| `get_law` | Získa základné informácie o predpise podľa čísla a roku |
+| `get_version` | Načíta stránku znenia predpisu k danému dátumu |
+| `get_paragraph` | Extrahuje konkrétny paragraf z predpisu |
+| `search` | Vyhľadá predpisy podľa kľúčových slov (autocomplete alebo fulltext) |
 | `get_recent` | Získa posledných 20 vyhlásených predpisov z RSS feedu |
+
+Každý nástroj vracia čitateľný text aj strojovo spracovateľný `structuredContent`.
+Výstupy obsahujú oficiálny zdrojový odkaz na Slov-Lex.
 
 ### Parametre
 
 #### `get_law`
+
 | Parameter | Typ | Povinný | Popis |
 |-----------|-----|---------|-------|
-| `number` | string/number | áno | Číslo zákona |
+| `number` | string/number | áno | Číslo predpisu |
 | `year` | string/number | áno | Rok vydania |
 
 #### `get_version`
+
 | Parameter | Typ | Povinný | Popis |
 |-----------|-----|---------|-------|
-| `law` | string | áno | Číslo zákona (napr. `595/2003`) alebo IRI |
-| `date` | string | nie | Dátum znenia `YYYY-MM-DD` (default: dnes) |
-| `max_chars` | number | nie | Max počet znakov (default: 20000) |
+| `law` | string | áno | Číslo predpisu (napr. `595/2003`) alebo IRI |
+| `date` | string | nie | Dátum znenia `YYYY-MM-DD` (default: dnes v `Europe/Bratislava`) |
+| `max_chars` | number | nie | Počet znakov jednej stránky (default: 20000, max: 100000) |
+| `offset` | number | nie | Znakový offset pre pokračovanie (default: 0) |
+
+Ak odpoveď obsahuje `has_more: true`, ďalšiu stránku načítaj s hodnotou
+`next_offset` použitou ako nový parameter `offset`.
 
 #### `get_paragraph`
+
 | Parameter | Typ | Povinný | Popis |
 |-----------|-----|---------|-------|
-| `law` | string | áno | Číslo zákona alebo IRI |
+| `law` | string | áno | Číslo predpisu alebo IRI |
 | `paragraph` | string | áno | Číslo paragrafu (napr. `3` alebo `§3`) |
-| `date` | string | nie | Dátum znenia `YYYY-MM-DD` (default: dnes) |
+| `date` | string | nie | Dátum znenia `YYYY-MM-DD` (default: dnes v `Europe/Bratislava`) |
 
 #### `search`
+
 | Parameter | Typ | Povinný | Popis |
 |-----------|-----|---------|-------|
 | `query` | string | áno | Hľadaný výraz |
@@ -63,7 +75,8 @@ Slov-Lex MCP je Model Context Protocol server, ktorý umožňuje AI asistentom p
 | `limit` | number | nie | Max počet výsledkov (default: 10, max: 25) |
 
 **Režimy vyhľadávania:**
-- `autocomplete` - rýchle vyhľadávanie v názvoch zákonov
+
+- `autocomplete` - rýchle vyhľadávanie v názvoch predpisov
 - `fulltext` - vyhľadávanie aj v nadpisoch paragrafov (napr. "Hromadné prepúšťanie")
 
 #### `get_recent`
@@ -76,7 +89,7 @@ Tento nástroj nemá žiadne parametre. Vracia posledných 20 vyhlásených pred
 
 ## Rýchla inštalácia (One-liner)
 
-Použi client-specific one-liner podľa svojho AI asistenta:
+Použi one-liner pre konkrétneho klienta podľa svojho AI asistenta:
 
 ### Claude Code / Claude Desktop
 
@@ -90,10 +103,10 @@ Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slo
 Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.codex/INSTALL.md
 ```
 
-### Google Gemini CLI
+### Google Antigravity / Antigravity CLI
 
 ```bash
-Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.gemini/INSTALL.md
+Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slov-Lex_MCP/master/.antigravity/INSTALL.md
 ```
 
 ### Cursor
@@ -114,7 +127,7 @@ Podrobné návody:
 |-----------|---------------------|
 | Claude Code / Claude Desktop | [.claude/INSTALL.md](.claude/INSTALL.md) |
 | OpenAI Codex CLI | [.codex/INSTALL.md](.codex/INSTALL.md) |
-| Google Gemini CLI | [.gemini/INSTALL.md](.gemini/INSTALL.md) |
+| Google Antigravity / Antigravity CLI | [.antigravity/INSTALL.md](.antigravity/INSTALL.md) |
 | Cursor | [.cursor/INSTALL.md](.cursor/INSTALL.md) |
 | VS Code | [.vscode/INSTALL.md](.vscode/INSTALL.md) |
 
@@ -125,9 +138,31 @@ Podrobné návody:
 ```bash
 git clone https://github.com/ESKRiPO/Slov-Lex_MCP.git ~/.local/share/slov-lex-mcp
 cd ~/.local/share/slov-lex-mcp
-npm install
+npm ci
 npm run build
 ```
+
+Priamy HTTP prístup obvykle stačí. Ak prostredie blokuje statický Slov-Lex a server
+ohlási chýbajúci Playwright Chromium, nainštaluj voliteľný browser fallback:
+
+```bash
+npm run install:browser
+```
+
+---
+
+## Aktualizácia z 1.2.5 na 1.3.0
+
+```bash
+cd ~/.local/share/slov-lex-mcp
+git pull --ff-only
+npm ci
+npm run check
+```
+
+Potom reštartuj MCP klienta. Názvy existujúcich piatich nástrojov sa nezmenili;
+`get_version` navyše podporuje stránkovanie a všetky nástroje vracajú aj
+`structuredContent`.
 
 ---
 
@@ -146,6 +181,14 @@ npm run build
 npm start
 ```
 
+### Kontroly projektu
+
+```bash
+npm test       # offline regresné testy
+npm run check  # TypeScript build + testy
+npm run smoke  # živý test proti Slov-Lex, Ústave a RSS
+```
+
 ---
 
 ## MCP Konfigurácia
@@ -162,7 +205,12 @@ claude mcp add --scope user slov-lex -- node "$HOME/.local/share/slov-lex-mcp/di
 
 ### Claude Desktop
 
-Pridajte do `~/.claude/claude_desktop_config.json`:
+Claude Desktop je podporovaný na macOS a Windows. Otvor `Settings` → `Developer` →
+`Edit Config`. Konfiguračný súbor je na macOS v
+`~/Library/Application Support/Claude/claude_desktop_config.json` a na Windows
+v `%APPDATA%\Claude\claude_desktop_config.json`.
+
+Príklad pre macOS:
 
 ```json
 {
@@ -170,11 +218,15 @@ Pridajte do `~/.claude/claude_desktop_config.json`:
     "slov-lex": {
       "type": "stdio",
       "command": "node",
-      "args": ["/home/<user>/.local/share/slov-lex-mcp/dist/index.js"]
+      "args": ["/Users/<user>/.local/share/slov-lex-mcp/dist/index.js"]
     }
   }
 }
 ```
+
+Na Windows môže cesta v `args` vyzerať ako
+`C:/Users/<user>/.local/share/slov-lex-mcp/dist/index.js`. Ak Desktop nenájde
+príkaz `node`, použi v poli `command` jeho plnú absolútnu cestu.
 
 ### OpenAI Codex CLI
 
@@ -184,17 +236,15 @@ Odporúčaná registrácia cez CLI:
 codex mcp add slov-lex -- node "$HOME/.local/share/slov-lex-mcp/dist/index.js"
 ```
 
-Podrobné a **canonical** inštrukcie sú v [.codex/INSTALL.md](.codex/INSTALL.md) vrátane troubleshootingu pre `os error 2`.
+Podrobné a **kanonické** inštrukcie sú v [.codex/INSTALL.md](.codex/INSTALL.md) vrátane riešenia chyby `os error 2`.
 
-### Google Gemini CLI
+### Google Antigravity / Antigravity CLI
 
-Odporúčaná registrácia cez CLI:
+Použi globálny `~/.gemini/config/mcp_config.json` alebo workspace konfiguráciu
+`.agents/mcp_config.json`:
 
-```bash
-gemini mcp add --scope user slov-lex node "$HOME/.local/share/slov-lex-mcp/dist/index.js"
-```
-
-Alebo pridajte do `~/.gemini/settings.json`:
+> Adresár `.gemini` v globálnej ceste je súčasťou aktuálneho formátu
+> Antigravity; nejde o zastaraný Gemini CLI konfiguračný súbor.
 
 ```json
 {
@@ -206,6 +256,11 @@ Alebo pridajte do `~/.gemini/settings.json`:
   }
 }
 ```
+
+V Antigravity IDE otvor `MCP Servers` → `Manage MCP Servers` → `View raw config`.
+V Antigravity CLI otvor Interactive MCP Manager príkazom `/mcp`. Podrobnosti sú
+v [.antigravity/INSTALL.md](.antigravity/INSTALL.md) a v
+[oficiálnej Antigravity dokumentácii](https://antigravity.google/docs/mcp).
 
 ### Cursor
 
@@ -247,6 +302,16 @@ Pridajte do `.vscode/mcp.json` v projekte alebo do user profile `mcp.json`:
 - **MCP SDK:** @modelcontextprotocol/sdk 1.29
 - **HTML parsing:** Cheerio
 - **Fallback browser:** Playwright
+
+Projekt nepoužíva CI/CD. GitHub Security audit kontroluje závislosti raz týždenne
+a dá sa spustiť aj manuálne z karty Actions; nespúšťa sa pri každom commite.
+
+---
+
+## Dôležité upozornenie
+
+Právne predpisy sa menia v čase. Pri použití výsledku skontroluj dátum znenia a
+oficiálny zdrojový odkaz. Výstup MCP servera nenahrádza právne poradenstvo.
 
 ---
 

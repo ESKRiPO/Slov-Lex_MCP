@@ -1,173 +1,377 @@
 import * as cheerio from "cheerio";
 import type { AnyNode } from "domhandler";
 
-function norm(s: string) {
-  return s.replace(/\s+/g, " ").trim();
+const OFFICIAL_STATIC_BASE = "https://static.slov-lex.sk";
+
+const TOP_LEVEL_UNIT_CLASSES = new Set(["paragraf", "ustavnyclanok", "clanok", "priloha"]);
+
+const GROUP_CLASSES = new Set([
+  ...TOP_LEVEL_UNIT_CLASSES,
+  "odsek",
+  "pismeno",
+  "bod",
+  "veta",
+  "oznacenaPolozka",
+  "poznamka",
+  "blokTextu",
+  "citat",
+]);
+
+const STRUCTURAL_HEADING_CLASSES = new Set([
+  "predpisNadpis",
+  "predpisPodnadpis",
+  "castOznacenie",
+  "castNadpis",
+  "hlavaOznacenie",
+  "hlavaNadpis",
+  "oddielOznacenie",
+  "oddielNadpis",
+  "dielOznacenie",
+  "dielNadpis",
+]);
+
+function norm(value: string) {
+  return value.replace(/\s+/g, " ").trim();
 }
 
-function renderTable($: cheerio.CheerioAPI, $table: cheerio.Cheerio<AnyNode>): string {
+function classList($element: cheerio.Cheerio<AnyNode>) {
+  return ($element.attr("class") ?? "").split(/\s+/).filter(Boolean);
+}
+
+function hasAnyClass($element: cheerio.Cheerio<AnyNode>, names: Set<string>) {
+  return classList($element).some((name) => names.has(name));
+}
+
+function isGroup($element: cheerio.Cheerio<AnyNode>) {
+  const classes = classList($element);
+  return classes.includes("Skupina") || classes.some((name) => GROUP_CLASSES.has(name));
+}
+
+function isTopLevelUnit($element: cheerio.Cheerio<AnyNode>) {
+  return hasAnyClass($element, TOP_LEVEL_UNIT_CLASSES);
+}
+
+function directChildWithClassSuffix($: cheerio.CheerioAPI, $element: cheerio.Cheerio<AnyNode>, suffix: string) {
+  return $element
+    .children()
+    .filter((_, child) => classList($(child)).some((name) => name.endsWith(suffix)))
+    .first();
+}
+
+function inferGroupLabel($element: cheerio.Cheerio<AnyNode>) {
+  const classes = classList($element);
+  const id = $element.attr("id") ?? "";
+  const idPart = (kind: string) => id.match(new RegExp(`(?:^|[.])${kind}-([^.]+)`))?.[1];
+
+  const odsek = classes.includes("odsek") ? idPart("odsek") : null;
+  if (odsek) return `(${odsek})`;
+  const pismeno = classes.includes("pismeno") ? idPart("pismeno") : null;
+  if (pismeno) return `${pismeno})`;
+  const bod = classes.includes("bod") ? idPart("bod") : null;
+  if (bod) return `${bod}.`;
+  const paragraf = classes.includes("paragraf") ? idPart("paragraf") : null;
+  if (paragraf) return `§ ${paragraf}`;
+  const article = classes.includes("ustavnyclanok") ? idPart("ustavnyclanok") : null;
+  if (article) return `Čl. ${article}`;
+  return "";
+}
+
+function resolveHttpUrl(href: string | undefined) {
+  if (!href || href.startsWith("#")) return null;
+  try {
+    const url = new URL(href, OFFICIAL_STATIC_BASE);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function escapeMarkdownLinkLabel(value: string) {
+  return value.replace(/([\\[\]])/g, "\\$1");
+}
+
+function inlineMarkdown($: cheerio.CheerioAPI, node: AnyNode): string {
+  if (node.type === "text") return $(node).text();
+
+  const $node = $(node);
+  const tagName = String($node.prop("tagName") ?? "").toLowerCase();
+  if (tagName === "br") return " ";
+
+  if (tagName === "a") {
+    const label = norm($node.text());
+    const href = resolveHttpUrl($node.attr("href"));
+    if (label && href) return `[${escapeMarkdownLinkLabel(label)}](${href})`;
+    return label;
+  }
+
+  return $node
+    .contents()
+    .toArray()
+    .map((child) => inlineMarkdown($, child))
+    .join("");
+}
+
+function escapeTableCell(value: string) {
+  return norm(value).replace(/\\/g, "\\\\").replace(/\|/g, "\\|");
+}
+
+function renderTable($: cheerio.CheerioAPI, $table: cheerio.Cheerio<AnyNode>): string[] {
   const rows: string[][] = [];
-  $table.find("tr").each((_, tr) => {
+
+  $table.find("tr").each((_, row) => {
     const cells: string[] = [];
-    $(tr)
-      .find("td, th")
+    $(row)
+      .children("th, td")
       .each((__, cell) => {
-        cells.push(norm($(cell).text()));
+        const $cell = $(cell);
+        cells.push(escapeTableCell($cell.text()));
+        const colspan = Number.parseInt($cell.attr("colspan") ?? "1", 10);
+        for (let i = 1; i < colspan; i += 1) cells.push("");
       });
     if (cells.length > 0) rows.push(cells);
   });
-  if (rows.length === 0) return "";
 
-  // Calculate column widths
-  const colWidths: number[] = [];
+  if (rows.length === 0) return [];
+  const columnCount = Math.max(...rows.map((row) => row.length));
   for (const row of rows) {
-    row.forEach((cell, i) => {
-      colWidths[i] = Math.max(colWidths[i] ?? 0, cell.length);
-    });
+    while (row.length < columnCount) row.push("");
   }
-
-  // Render table as text
-  const lines: string[] = [];
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const paddedCells = row.map((cell, j) => cell.padEnd(colWidths[j]));
-    lines.push("| " + paddedCells.join(" | ") + " |");
-    // Add separator after header row
-    if (i === 0) {
-      lines.push("| " + colWidths.map((w) => "-".repeat(w)).join(" | ") + " |");
-    }
-  }
-  return lines.join("\n");
+  const [header, ...body] = rows;
+  return [
+    `| ${header.join(" | ")} |`,
+    `| ${Array.from({ length: columnCount }, () => "---").join(" | ")} |`,
+    ...body.map((row) => `| ${row.join(" | ")} |`),
+  ];
 }
 
-function getMainText($el: cheerio.Cheerio<AnyNode>) {
-  // Get text only from div.text (the main text at the beginning of the unit)
-  return norm($el.children("div.text").first().text());
-}
-
-function getTrailingContent($: cheerio.CheerioAPI, $el: cheerio.Cheerio<AnyNode>, indent: number): string[] {
-  // Get content from div.text2 (appears AFTER child elements like písmenká/body)
-  // May contain tables or continuation text
-  const lines: string[] = [];
-
-  $el.children("div.text2").each((_, text2) => {
-    const $text2 = $(text2);
-    // Check for tables
-    const $table = $text2.find("table").first();
-    if ($table.length > 0) {
-      const tableText = renderTable($, $table);
-      if (tableText) {
-        // Add table lines with proper indentation
-        for (const line of tableText.split("\n")) {
-          lines.push(" ".repeat(indent) + line);
-        }
-      }
-    } else {
-      // Fallback to plain text
-      const plainText = norm($text2.text());
-      if (plainText) {
-        lines.push(" ".repeat(indent) + plainText);
-      }
-    }
-  });
-
-  return lines;
-}
-
-function labelFromId(prefix: string, id: string | undefined) {
-  if (!id) return "";
-  const m = id.match(new RegExp(`${prefix}-(\\d+)(?:\\b|$)`));
-  return m ? m[1] : "";
-}
-
-function renderUnit(
+function renderContentBlock(
   $: cheerio.CheerioAPI,
-  el: AnyNode,
+  $element: cheerio.Cheerio<AnyNode>,
   indent: number,
   depth: number,
 ): string[] {
-  if (depth > 20) return [];
-  const $el = $(el);
-  const classList = ($el.attr("class") ?? "").split(/\s+/);
-  const isOdsek = classList.includes("odsek");
-  const isPismeno = classList.includes("pismeno");
-  const isBod = classList.includes("bod");
+  if (depth > 30) return [];
 
-  let label = "";
-  if (isOdsek) {
-    label = norm($el.children("div.odsekOznacenie").first().text());
-    if (!label) {
-      const num = labelFromId("odsek", $el.attr("id"));
-      label = num ? `(${num})` : "(?)";
-    }
-  } else if (isPismeno) {
-    label = norm($el.children("div.pismenoOznacenie").first().text()) || "?";
-  } else if (isBod) {
-    label = norm($el.children("div.bodOznacenie").first().text()) || "?";
-  }
-
-  const text = getMainText($el);
   const lines: string[] = [];
-  if (label || text) {
-    lines.push(`${" ".repeat(indent)}${[label, text].filter(Boolean).join(" ")}`.trimEnd());
-  }
+  let inlineBuffer = "";
+  const indentation = " ".repeat(indent);
 
-  const childSelector = [
-    "div.odsek",
-    "div.pismeno",
-    "div.bod",
-  ].join(", ");
+  const flushInline = () => {
+    const value = norm(inlineBuffer);
+    if (value) lines.push(`${indentation}${value}`);
+    inlineBuffer = "";
+  };
 
-  $el.children(childSelector).each((_, child) => {
-    const childClasses = ($(child).attr("class") ?? "").split(/\s+/);
-    const childIndent =
-      childClasses.includes("bod") || childClasses.includes("pismeno") || childClasses.includes("odsek")
-        ? indent + 2
-        : indent + 2;
-    lines.push(...renderUnit($, child, childIndent, depth + 1));
+  $element.contents().each((_, child) => {
+    if (child.type === "text") {
+      inlineBuffer += $(child).text();
+      return;
+    }
+
+    const $child = $(child);
+    const tagName = String($child.prop("tagName") ?? "").toLowerCase();
+
+    if (tagName === "br") {
+      inlineBuffer += " ";
+      return;
+    }
+
+    if (tagName === "table") {
+      flushInline();
+      lines.push(...renderTable($, $child).map((line) => `${indentation}${line}`));
+      return;
+    }
+
+    if (isGroup($child)) {
+      flushInline();
+      lines.push(...renderGroup($, child, indent, depth + 1));
+      return;
+    }
+
+    if (["div", "p", "ul", "ol", "li"].includes(tagName)) {
+      flushInline();
+      const childLines = renderContentBlock($, $child, indent, depth + 1);
+      if (tagName === "li" && childLines.length > 0) {
+        childLines[0] = `${indentation}- ${childLines[0].slice(indent)}`;
+      }
+      lines.push(...childLines);
+      return;
+    }
+
+    inlineBuffer += inlineMarkdown($, child);
   });
 
-  // Add trailing content (div.text2) AFTER child elements
-  lines.push(...getTrailingContent($, $el, indent));
-
+  flushInline();
   return lines;
+}
+
+function renderGroup($: cheerio.CheerioAPI, element: AnyNode, indent: number, depth: number): string[] {
+  if (depth > 30) return [];
+
+  const $element = $(element);
+  const $label = directChildWithClassSuffix($, $element, "Oznacenie");
+  const $title = directChildWithClassSuffix($, $element, "Nadpis");
+  const label = norm($label.text()) || inferGroupLabel($element);
+  const title = norm($title.text());
+  const header = [label, title ? `- ${title}` : ""].filter(Boolean).join(" ");
+  const separateHeader = isTopLevelUnit($element);
+  const lines: string[] = [];
+  let pendingLabel = separateHeader ? "" : header;
+  const indentation = " ".repeat(indent);
+
+  if (separateHeader && header) lines.push(`${indentation}${header}`);
+
+  const flushPendingLabel = () => {
+    if (!pendingLabel) return;
+    lines.push(`${indentation}${pendingLabel}`);
+    pendingLabel = "";
+  };
+
+  const appendContent = (contentLines: string[]) => {
+    if (contentLines.length === 0) return;
+    if (pendingLabel) {
+      const first = contentLines[0].slice(indent).trimStart();
+      lines.push(`${indentation}${pendingLabel}${first ? ` ${first}` : ""}`);
+      pendingLabel = "";
+      lines.push(...contentLines.slice(1));
+      return;
+    }
+    lines.push(...contentLines);
+  };
+
+  $element.contents().each((_, child) => {
+    if (child === $label.get(0) || child === $title.get(0)) return;
+    if (child.type === "text") {
+      const value = norm($(child).text());
+      if (value) appendContent([`${indentation}${value}`]);
+      return;
+    }
+
+    const $child = $(child);
+    const tagName = String($child.prop("tagName") ?? "").toLowerCase();
+
+    if (tagName === "table") {
+      appendContent(renderTable($, $child).map((line) => `${indentation}${line}`));
+      return;
+    }
+
+    if (isGroup($child)) {
+      flushPendingLabel();
+      const childIndent = separateHeader ? indent : indent + 2;
+      lines.push(...renderGroup($, child, childIndent, depth + 1));
+      return;
+    }
+
+    appendContent(renderContentBlock($, $child, indent, depth + 1));
+  });
+
+  flushPendingLabel();
+  return lines.filter((line) => line.trim());
+}
+
+function collectDocumentBlocks($: cheerio.CheerioAPI, $root: cheerio.Cheerio<AnyNode>, blocks: AnyNode[]) {
+  $root.children().each((_, child) => {
+    const $child = $(child);
+    const classes = classList($child);
+
+    if (
+      isTopLevelUnit($child) ||
+      classes.some((name) => STRUCTURAL_HEADING_CLASSES.has(name)) ||
+      classes.includes("text") ||
+      classes.includes("text2")
+    ) {
+      blocks.push(child);
+      return;
+    }
+
+    collectDocumentBlocks($, $child, blocks);
+  });
 }
 
 export function extractParagrafFromPortalHtml(portalHtml: string, paragrafId: string) {
   const $ = cheerio.load(portalHtml);
-  const id = paragrafId.replace(/^§/i, "").trim().replace(/\s+/g, "");
-  const cssId = `paragraf-${id.toLowerCase()}`;
-  const $par = $(`div.paragraf#${cssId}`);
-  if ($par.length === 0) return null;
-  return { $, $par: $par.first() };
+  const normalizedId = paragrafId.replace(/^§/iu, "").trim().replace(/\s+/g, "").toLowerCase();
+  const expectedId = `paragraf-${normalizedId}`;
+  const $paragraf = $("div.paragraf")
+    .filter((_, element) => ($(element).attr("id") ?? "").toLowerCase() === expectedId)
+    .first();
+  if ($paragraf.length === 0) return null;
+  return { $, $par: $paragraf };
 }
 
-export function renderParagraf($: cheerio.CheerioAPI, $par: cheerio.Cheerio<AnyNode>) {
-  const ozn = norm($par.children("div.paragrafOznacenie").first().text());
-  const nadpis = norm($par.children("div.paragrafNadpis").first().text());
-  const header = [ozn, nadpis ? `- ${nadpis}` : ""].join(" ").trim();
-  const lines: string[] = [header];
-
-  const childSelector = ["div.odsek", "div.pismeno", "div.bod"].join(", ");
-  $par.children(childSelector).each((_, el) => {
-    lines.push(...renderUnit($, el, 0, 0));
-  });
-
-  return lines.filter(Boolean).join("\n");
+export function renderParagraf($: cheerio.CheerioAPI, $paragraf: cheerio.Cheerio<AnyNode>) {
+  const element = $paragraf.get(0);
+  if (!element) return "";
+  return renderGroup($, element, 0, 0).join("\n");
 }
 
-export function renderWholeLawText(portalHtml: string, maxChars: number) {
+export function renderWholeLawText(portalHtml: string, maxChars: number, offset = 0) {
+  if (!Number.isSafeInteger(maxChars) || maxChars <= 0) {
+    throw new Error("maxChars musí byť kladné celé číslo.");
+  }
+  if (!Number.isSafeInteger(offset) || offset < 0) {
+    throw new Error("offset musí byť nezáporné celé číslo.");
+  }
+
   const $ = cheerio.load(portalHtml);
-  const parts: string[] = [];
-  // The portal HTML also contains summary/navigation paragraf blocks without ids.
-  // Restrict whole-law rendering to the actual paragraf content nodes.
-  $("div.paragraf[id^='paragraf-']").each((_, el) => {
-    const $par = $(el);
-    const text = renderParagraf($, $par);
-    if (text.trim()) parts.push(text.trim());
-  });
+  const blocks: AnyNode[] = [];
+  const $predpis = $("#predpis").first();
 
-  const full = parts.join("\n\n");
-  if (full.length <= maxChars) return { text: full, truncated: false };
-  return { text: full.slice(0, maxChars) + `\n\n…(truncated to ${maxChars} chars)…`, truncated: true };
+  if ($predpis.length > 0) {
+    collectDocumentBlocks($, $predpis, blocks);
+  } else {
+    $("div.paragraf[id^='paragraf-'], div.ustavnyclanok, div.clanok").each((_, element) => {
+      blocks.push(element);
+    });
+  }
+
+  $("#prilohy")
+    .first()
+    .children("div.priloha")
+    .each((_, element) => {
+      blocks.push(element);
+    });
+
+  const parts = blocks
+    .map((element) => {
+      const $element = $(element);
+      if (isTopLevelUnit($element)) return renderGroup($, element, 0, 0).join("\n");
+      const classes = classList($element);
+      if (classes.some((name) => STRUCTURAL_HEADING_CLASSES.has(name))) {
+        return norm($element.text());
+      }
+      return renderContentBlock($, $element, 0, 0).join("\n");
+    })
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const fullText = parts.join("\n\n").replace(/\n{3,}/g, "\n\n");
+  if (offset > fullText.length) {
+    throw new Error(`Offset ${offset} je mimo rozsahu dokumentu (${fullText.length} znakov).`);
+  }
+
+  const requestedEnd = Math.min(offset + maxChars, fullText.length);
+  let endOffset = requestedEnd;
+  if (requestedEnd < fullText.length) {
+    const minimumBoundary = offset + Math.floor(maxChars * 0.75);
+    for (const separator of ["\n\n", "\n", " "]) {
+      const boundary = fullText.lastIndexOf(separator, requestedEnd - 1);
+      if (boundary >= minimumBoundary) {
+        endOffset = boundary + separator.length;
+        break;
+      }
+    }
+  }
+  const text = fullText.slice(offset, endOffset);
+  const hasMore = endOffset < fullText.length;
+
+  return {
+    text,
+    offset,
+    endOffset,
+    totalChars: fullText.length,
+    hasMore,
+    nextOffset: hasMore ? endOffset : null,
+    truncated: offset > 0 || hasMore,
+  };
 }

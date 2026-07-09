@@ -6,7 +6,37 @@ Formát je založený na [Keep a Changelog](https://keepachangelog.com/sk/1.0.0/
 
 ---
 
-## [1.2.5] - 2026-04-18
+## [1.3.0] - 9. 7. 2026
+
+### Pridané
+
+- Stránkovanie `get_version` pomocou `offset`, `has_more` a `next_offset`
+- Strojovo spracovateľný `structuredContent`, výstupné schémy a oficiálne zdrojové odkazy
+- Offline regresné testy renderera, dátumov a HTTP retry logiky
+- Týždenný a manuálne spustiteľný GitHub Security audit bez CI/CD triggerov pri commitoch
+- Voliteľný príkaz `npm run install:browser` pre Playwright Chromium fallback
+
+### Zmenené
+
+- MCP nástroje používajú aktuálne `registerTool`, read-only anotácie a prísnejšie vstupné schémy
+- Predvolený dátum sa počíta v časovom pásme `Europe/Bratislava`
+- API odpovede Slov-Lex sa kontrolujú runtime schémami
+- Registrácia MCP nástrojov je oddelená od štartu servera a spoločné načítanie znení, cache a formátovanie sú zjednotené
+- Runtime závislosti a lockfile sú aktualizované bez známych `npm audit` zraniteľností
+- Inštalačné návody prešli z ukončeného Gemini CLI na Google Antigravity a Antigravity CLI
+- Opravené platformové cesty ku konfigurácii Claude Desktop pre macOS a Windows
+
+### Opravené
+
+- Paragrafy s textom priamo v `div.text` už nestrácajú obsah, napríklad § 16 zákona 300/2005
+- Celé znenie podporuje ústavné články, novelizačné články, štrukturálne nadpisy a prílohy
+- Zmiešaný `text2` obsah zachová všetky tabuľky aj text pred nimi, medzi nimi a za nimi
+- Neexistujúce kalendárne dátumy sa odmietnu lokálne namiesto chybového volania upstreamu
+- HTTP retry sa už nespúšťa pre nerelevantné 4xx odpovede a rešpektuje `Retry-After`
+
+---
+
+## [1.2.5] - 18. 4. 2026
 
 ### Zmenené
 
@@ -15,13 +45,13 @@ Formát je založený na [Keep a Changelog](https://keepachangelog.com/sk/1.0.0/
 
 ### Opravené
 
-- Inštalačné návody pre MCP klientov sú zosúladené s aktuálnymi konfiguráciami pre Claude Code, Claude Desktop, Codex CLI, Gemini CLI, Cursor a VS Code
+- Inštalačné návody pre MCP klientov boli zosúladené s vtedajšími konfiguráciami pre Claude Code, Claude Desktop, Codex CLI, Gemini CLI (dnes Antigravity CLI), Cursor a VS Code
 - VS Code dokumentácia už používa správny formát `.vscode/mcp.json` s top-level kľúčom `servers`
 - One-linery v dokumentácii už smerujú na client-specific `INSTALL.md` súbory namiesto generického zastaraného postupu
 
 ---
 
-## [1.2.4] - 2026-03-27
+## [1.2.4] - 27. 3. 2026
 
 ### Opravené
 
@@ -31,7 +61,7 @@ Formát je založený na [Keep a Changelog](https://keepachangelog.com/sk/1.0.0/
 
 ---
 
-## [1.2.3] - 2026-01-28
+## [1.2.3] - 28. 1. 2026
 
 ### Zmenené
 
@@ -40,7 +70,7 @@ Formát je založený na [Keep a Changelog](https://keepachangelog.com/sk/1.0.0/
 
 ---
 
-## [1.2.0] - 2025-01-10
+## [1.2.0] - 10. 1. 2025
 
 ### Pridané
 
@@ -63,7 +93,7 @@ Formát je založený na [Keep a Changelog](https://keepachangelog.com/sk/1.0.0/
 
 ---
 
-## [1.1.0] - 2025-01-09
+## [1.1.0] - 9. 1. 2025
 
 ### Pridané
 
@@ -75,7 +105,7 @@ Formát je založený na [Keep a Changelog](https://keepachangelog.com/sk/1.0.0/
 
 ---
 
-## [1.0.0] - 2025-01-08
+## [1.0.0] - 8. 1. 2025
 
 ### Pridané
 

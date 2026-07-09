@@ -15,8 +15,12 @@ Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slo
 ```bash
 git clone https://github.com/ESKRiPO/Slov-Lex_MCP.git ~/.local/share/slov-lex-mcp
 cd ~/.local/share/slov-lex-mcp
-npm install && npm run build
+npm ci
+npm run build
 ```
+
+> Playwright Chromium je voliteľný fallback. Ak server ohlási chýbajúci browser,
+> spusti v priečinku projektu `npm run install:browser`.
 
 ### 2. Registrácia MCP servera
 
@@ -42,10 +46,11 @@ codex
 
 ## Dostupné nástroje
 
-- `get_law` - Základné info o zákone
-- `get_version` - Úplné znenie k dátumu
+- `get_law` - Základné info o predpise
+- `get_version` - Stránkované znenie k dátumu
 - `get_paragraph` - Konkrétny paragraf
-- `search` - Vyhľadávanie zákonov
+- `search` - Vyhľadávanie predpisov
+- `get_recent` - Posledných 20 vyhlásených predpisov
 
 ## Overenie
 

@@ -15,8 +15,12 @@ Fetch and follow instructions from https://raw.githubusercontent.com/ESKRiPO/Slo
 ```bash
 git clone https://github.com/ESKRiPO/Slov-Lex_MCP.git ~/.local/share/slov-lex-mcp
 cd ~/.local/share/slov-lex-mcp
-npm install && npm run build
+npm ci
+npm run build
 ```
+
+> Playwright Chromium je voliteľný fallback. Ak server ohlási chýbajúci browser,
+> spusti v priečinku projektu `npm run install:browser`.
 
 ### 2. Claude Code
 
@@ -37,7 +41,15 @@ claude mcp get slov-lex
 
 ### 3. Claude Desktop
 
-Pridaj do `~/.claude/claude_desktop_config.json`:
+Claude Desktop je podporovaný na macOS a Windows. V aplikácii otvor
+`Settings` → `Developer` → `Edit Config`.
+
+Konfiguračný súbor sa nachádza na týchto miestach:
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+Príklad pre macOS:
 
 ```json
 {
@@ -45,13 +57,18 @@ Pridaj do `~/.claude/claude_desktop_config.json`:
     "slov-lex": {
       "type": "stdio",
       "command": "node",
-      "args": ["/home/<user>/.local/share/slov-lex-mcp/dist/index.js"]
+      "args": ["/Users/<user>/.local/share/slov-lex-mcp/dist/index.js"]
     }
   }
 }
 ```
 
-> V config súbore používaj plnú absolútnu cestu, nie `~`.
+Na Windows môže cesta v `args` vyzerať ako
+`C:/Users/<user>/.local/share/slov-lex-mcp/dist/index.js`.
+
+> V config súbore používaj plné absolútne cesty. Ak Desktop nenájde príkaz
+> `node`, nahraď ho absolútnou cestou z `which node` (macOS) alebo `where node`
+> (Windows).
 
 ### 4. Reštart
 
@@ -60,10 +77,10 @@ Pridaj do `~/.claude/claude_desktop_config.json`:
 
 ## Dostupné nástroje
 
-- `get_law` - Základné info o zákone
-- `get_version` - Úplné znenie k dátumu
+- `get_law` - Základné info o predpise
+- `get_version` - Stránkované znenie k dátumu
 - `get_paragraph` - Konkrétny paragraf
-- `search` - Vyhľadávanie zákonov
+- `search` - Vyhľadávanie predpisov
 - `get_recent` - Posledných 20 vyhlásených predpisov
 
 ## Test
