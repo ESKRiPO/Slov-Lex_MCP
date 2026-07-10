@@ -254,6 +254,19 @@ export async function searchRozsirene(query: string, limit: number) {
   });
 }
 
+export async function searchNazvy(query: string, limit: number) {
+  const search = normalizeSearch(query, limit);
+  if (!search) return [];
+  const key = `nazvy:${search.normalizedValue}::${search.limit}`;
+  return cached(rozsireneSearchCache, key, async () => {
+    const url =
+      `${API_BASE}/vyhladavanie/predpisZbierky/rozsirene?` +
+      `nazov=${encodeURIComponent(search.value)}&rows=${search.limit}`;
+    const raw = await httpGetJson<unknown>(url);
+    return parseUpstream(rozsireneResponseSchema, raw, url).docs;
+  });
+}
+
 export type RecentPredpis = {
   cislo: string;
   nazov: string;

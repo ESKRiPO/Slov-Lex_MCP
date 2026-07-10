@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { extractParagrafFromPortalHtml, renderParagraf, renderWholeLawText } from "./portal.js";
+import { searchPredpisy } from "./search.js";
 import {
   getOfficialPortalUrl,
   getPortalHtml,
@@ -10,8 +11,6 @@ import {
   getVersionIriForDate,
   isValidIsoDate,
   parseLawBaseIri,
-  searchNavrhy,
-  searchRozsirene,
 } from "./slovlex.js";
 
 const READ_ONLY_ANNOTATIONS = {
@@ -283,7 +282,7 @@ export function registerTools(server: McpServer) {
     {
       title: "Vyhľadávanie predpisov",
       description:
-        "Vyhľadá predpisy podľa kľúčových slov. 'autocomplete' je rýchly režim; 'fulltext' hľadá aj v nadpisoch paragrafov.",
+        "Vyhľadá a zoradí predpisy podľa relevancie. 'autocomplete' kombinuje názvy s fulltextom; 'fulltext' hľadá aj v nadpisoch paragrafov.",
       inputSchema: z.object({
         query: z.string().trim().min(1).max(200).describe("Hľadaný výraz"),
         mode: z.enum(["autocomplete", "fulltext"]).optional().describe("Režim vyhľadávania; default autocomplete"),
@@ -295,37 +294,23 @@ export function registerTools(server: McpServer) {
     async ({ query, mode, limit }) => {
       const searchMode = mode ?? "autocomplete";
       const maxResults = limit ?? 10;
-      const normalizedQuery = query.toLocaleLowerCase("sk-SK");
-      const outputResults =
-        searchMode === "fulltext"
-          ? (await searchRozsirene(query, maxResults)).map((result) => ({
-              iri: result.iri,
-              citation: result.cislo ?? null,
-              title: result.nazov ?? null,
-              description: null,
-              matching_headings:
-                result.nadpisy?.filter((heading) => heading.toLocaleLowerCase("sk-SK").includes(normalizedQuery)) ?? [],
-              source_url: getOfficialPortalUrl(result.iri),
-            }))
-          : (await searchNavrhy(query, maxResults)).map((item) => ({
-              iri: item.iri,
-              citation: item.hodnotaPola ?? item.menovka ?? null,
-              title: null,
-              description: item.popis ?? null,
-              matching_headings: [],
-              source_url: getOfficialPortalUrl(item.iri),
-            }));
+      const outputResults = (await searchPredpisy(query, searchMode, maxResults)).map((result) => ({
+        iri: result.iri,
+        citation: result.citation,
+        title: result.title,
+        description: result.description,
+        matching_headings: result.matchingHeadings,
+        source_url: getOfficialPortalUrl(result.iri),
+      }));
       const output = { query, mode: searchMode, results: outputResults };
       if (outputResults.length === 0) return toolResult("Bez výsledkov.", output);
       const text = outputResults
         .map((result) => {
           const label = result.citation ?? result.iri;
-          const summary =
-            searchMode === "fulltext"
-              ? `${label} - ${result.title ?? ""}`.trim()
-              : result.description?.startsWith(label)
-                ? result.description
-                : `${label}${result.description ? ` - ${result.description}` : ""}`;
+          const detail = result.title ?? result.description;
+          const summary = result.description?.startsWith(label)
+            ? result.description
+            : `${label}${detail ? ` - ${detail}` : ""}`;
           const headings = result.matching_headings.length
             ? `\nZhodné nadpisy: ${result.matching_headings.slice(0, 5).join(", ")}${result.matching_headings.length > 5 ? "…" : ""}`
             : "";

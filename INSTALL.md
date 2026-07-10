@@ -50,7 +50,7 @@ priamy prístup k statickému Slov-Lex. Ak server ohlási chýbajúci browser, s
 npm run install:browser
 ```
 
-### Aktualizácia z 1.2.5 na 1.3.0
+### Aktualizácia na 1.3.1
 
 ```bash
 cd ~/.local/share/slov-lex-mcp
@@ -60,8 +60,8 @@ npm run check
 ```
 
 Po aktualizácii reštartuj MCP klienta. Existujúce konfigurácie servera zostávajú
-platné; výnimkou je prechod používateľov Gemini CLI na Antigravity alebo
-Antigravity CLI podľa nového návodu nižšie.
+platné. Verzia 1.3.1 zlepšuje vyhľadávanie prirodzených výrazov a radenie
+relevancie bez zmeny názvov MCP nástrojov.
 
 ### 2. Konfigurácia AI klienta
 

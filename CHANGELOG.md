@@ -6,6 +6,25 @@ Formát je založený na [Keep a Changelog](https://keepachangelog.com/sk/1.0.0/
 
 ---
 
+## [1.3.1] - 11. 7. 2026
+
+### Pridané
+
+- Živý audit vyhľadávania `npm run audit:search` so širšou sadou právnych scenárov
+- Rozvíjanie bežných právnych skratiek `DPH`, `GDPR` a `ZVO`
+
+### Zmenené
+
+- Predvolený autocomplete kombinuje návrhy, vyhľadávanie v názvoch a fulltext
+- Radenie relevancie toleruje bežné slovenské pádové koncovky a text bez diakritiky
+- Účinné základné predpisy majú prednosť pred historickými zákonmi, novelami a vedľajšími zmienkami
+- Výsledky z rôznych zdrojov sa zlučujú podľa základného IRI a vracajú bez duplicít
+
+### Opravené
+
+- Výrazy ako `daň z príjmov`, `dane z príjmov`, `cestná premávka`, `verejné obstarávanie`, `zákon o rodine`, `stavebný zákon` a `autorský zákon` radia aktuálny hlavný predpis na prvé miesto
+- Autocomplete už pri relevantnom fulltextovom výsledku nevracia prázdny názov
+
 ## [1.3.0] - 9. 7. 2026
 
 ### Pridané

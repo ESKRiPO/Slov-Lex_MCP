@@ -1,5 +1,6 @@
 import { getPortalHtml, getRecentPredpisy, getRozsireneByIri, getVersionIriForDate } from "./slovlex.js";
 import { extractParagrafFromPortalHtml, renderParagraf, renderWholeLawText } from "./portal.js";
+import { searchPredpisy } from "./search.js";
 
 async function run() {
   const baseIri = "/SK/ZZ/2003/595";
@@ -40,10 +41,27 @@ async function run() {
   if (!recent.length) {
     throw new Error("Recent RSS feed is empty.");
   }
+
+  const incomeTax = await searchPredpisy("daň z príjmov", "autocomplete", 10);
+  if (!incomeTax[0]?.iri.startsWith("/SK/ZZ/2003/595/")) {
+    throw new Error(`Natural-language search did not rank 595/2003 first: ${incomeTax[0]?.iri ?? "no result"}`);
+  }
+
+  const genericTax = await searchPredpisy("daň", "autocomplete", 10);
+  if (!genericTax[0]?.title || /^(?:Zákon|Nariadenie|Vyhláška),? ktor/u.test(genericTax[0].title)) {
+    throw new Error(`Generic search ranked an amending act first: ${genericTax[0]?.title ?? "no result"}`);
+  }
+
+  const collectiveDismissals = await searchPredpisy("Hromadné prepúšťanie", "fulltext", 10);
+  if (!collectiveDismissals[0]?.iri.startsWith("/SK/ZZ/2001/311/")) {
+    throw new Error(
+      `Heading search did not rank the Labour Code first: ${collectiveDismissals[0]?.iri ?? "no result"}`,
+    );
+  }
   console.log(`OK ${versionIri} účinnosť ${meta.ucinnyOd} - ${meta.ucinnyDo}`);
   console.log(text.split("\n").slice(0, 12).join("\n"));
   console.log(
-    `Whole-law, direct-text paragraph and constitutional article checks OK; RSS items: ${recent.length}`,
+    `Whole-law, direct-text paragraph, constitutional article and relevance checks OK; RSS items: ${recent.length}`,
   );
 }
 

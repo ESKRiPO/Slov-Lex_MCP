@@ -6,6 +6,7 @@ import {
   renderParagraf,
   renderWholeLawText,
 } from "../src/portal.js";
+import { expandSearchQueries, rankSearchCandidates, type SearchCandidate } from "../src/search.js";
 import {
   getOfficialPortalUrl,
   isValidIsoDate,
@@ -189,6 +190,130 @@ test("oficiálna URL sa vytvorí z verziovaného IRI", () => {
     getOfficialPortalUrl("/SK/ZZ/2003/595/20250101"),
     "https://www.slov-lex.sk/ezbierky/pravne-predpisy/SK/ZZ/2003/595/20250101/",
   );
+});
+
+test("vyhľadávanie zohľadní skloňovanie a uprednostní hlavný zákon pred novelou", () => {
+  const candidates: SearchCandidate[] = [
+    {
+      iri: "/SK/ZZ/2004/177/20040501",
+      citation: "177/2004 Z. z.",
+      title:
+        "Zákon o európskom zoskupení hospodárskych záujmov, ktorým sa mení a dopĺňa zákon č. 595/2003 Z. z. o dani z príjmov",
+      description: null,
+      matchingHeadings: [],
+    },
+    {
+      iri: "/SK/ZZ/2025/152/20260101",
+      citation: "152/2025 Z. z.",
+      title: "Zákon, ktorým sa mení a dopĺňa zákon č. 595/2003 Z. z. o dani z príjmov",
+      description: null,
+      matchingHeadings: [],
+    },
+    {
+      iri: "/SK/ZZ/2003/595/20260101",
+      citation: "595/2003 Z. z.",
+      title: "Zákon o dani z príjmov",
+      description: null,
+      matchingHeadings: [],
+    },
+  ];
+
+  assert.equal(rankSearchCandidates(candidates, "daň z príjmov", 10)[0]?.citation, "595/2003 Z. z.");
+  assert.equal(rankSearchCandidates(candidates, "595/2003", 10)[0]?.citation, "595/2003 Z. z.");
+});
+
+test("presná zhoda nadpisu paragrafu prekoná všeobecnú textovú zhodu", () => {
+  const candidates: SearchCandidate[] = [
+    {
+      iri: "/SK/ZZ/2004/5/20260623",
+      citation: "5/2004 Z. z.",
+      title: "Zákon o službách zamestnanosti",
+      description: "Predpis obsahuje ustanovenia o prepúšťaní.",
+      matchingHeadings: [],
+    },
+    {
+      iri: "/SK/ZZ/2001/311/20260607",
+      citation: "311/2001 Z. z.",
+      title: "Zákonník práce",
+      description: null,
+      matchingHeadings: ["Hromadné prepúšťanie"],
+    },
+  ];
+
+  assert.equal(rankSearchCandidates(candidates, "Hromadné prepúšťanie", 10)[0]?.citation, "311/2001 Z. z.");
+});
+
+test("radenie toleruje slovenské pádové koncovky", () => {
+  const candidates: SearchCandidate[] = [
+    {
+      iri: "/SK/ZZ/1961/135/20250401",
+      citation: "135/1961 Zb.",
+      title: "Zákon o pozemných komunikáciách (cestný zákon)",
+      description: null,
+      matchingHeadings: [],
+    },
+    {
+      iri: "/SK/ZZ/2009/8/20260101",
+      citation: "8/2009 Z. z.",
+      title: "Zákon o cestnej premávke a o zmene a doplnení niektorých zákonov",
+      description: null,
+      matchingHeadings: [],
+    },
+  ];
+
+  assert.equal(rankSearchCandidates(candidates, "cestná premávka", 10)[0]?.citation, "8/2009 Z. z.");
+});
+
+test("historicky neúčinný predpis nepredbehne aktuálny zákon", () => {
+  const candidates: SearchCandidate[] = [
+    {
+      iri: "/SK/ZZ/1963/94/20040101",
+      citation: "94/1963 Zb.",
+      title: "Zákon o rodine",
+      description: null,
+      matchingHeadings: [],
+      effectiveTo: "2005-03-31T00:00:00Z",
+    },
+    {
+      iri: "/SK/ZZ/2005/36/20260601",
+      citation: "36/2005 Z. z.",
+      title: "Zákon o rodine a o zmene a doplnení niektorých zákonov",
+      description: null,
+      matchingHeadings: [],
+      effectiveTo: "2099-12-31T00:00:00Z",
+    },
+  ];
+
+  assert.equal(rankSearchCandidates(candidates, "zákon o rodine", 10)[0]?.citation, "36/2005 Z. z.");
+});
+
+test("predmet uvedený na začiatku názvu prekoná vedľajšiu zmienku", () => {
+  const candidates: SearchCandidate[] = [
+    {
+      iri: "/SK/ZZ/2018/159/20180501",
+      citation: "159/2018 Z. z.",
+      title:
+        "Vyhláška Ministerstva zdravotníctva Slovenskej republiky o podrobnostiach o poistnom na verejné zdravotné poistenie",
+      description: null,
+      matchingHeadings: ["Verejné zdravotné poistenie"],
+    },
+    {
+      iri: "/SK/ZZ/2004/580/20260101",
+      citation: "580/2004 Z. z.",
+      title: "Zákon o zdravotnom poistení a o zmene a doplnení zákona č. 95/2002 Z. z.",
+      description: null,
+      matchingHeadings: [],
+    },
+  ];
+
+  assert.equal(rankSearchCandidates(candidates, "zdravotné poistenie", 10)[0]?.citation, "580/2004 Z. z.");
+});
+
+test("bežné právne skratky sa rozvinú bez straty pôvodného dotazu", () => {
+  assert.deepEqual(expandSearchQueries("sadzba DPH"), ["sadzba DPH", "sadzba daň z pridanej hodnoty"]);
+  assert.deepEqual(expandSearchQueries("GDPR"), ["GDPR", "ochrana osobných údajov"]);
+  assert.deepEqual(expandSearchQueries("ZVO"), ["ZVO", "verejné obstarávanie"]);
+  assert.deepEqual(expandSearchQueries("výživné"), ["výživné", "zákon o rodine"]);
 });
 
 test("HTTP 404 sa neopakuje", async () => {

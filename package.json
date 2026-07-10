@@ -1,6 +1,6 @@
 {
   "name": "slov-lex_mcp",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "MCP server for Slov-Lex: search legal acts and load dated versions, paragraphs and recent publications.",
   "type": "module",
   "main": "dist/index.js",
@@ -12,6 +12,7 @@
     "check": "npm run build && npm test",
     "presmoke": "npm run build",
     "smoke": "node dist/smoke.js",
+    "audit:search": "npm run build && node dist/search-audit.js",
     "install:browser": "playwright install chromium"
   },
   "engines": {

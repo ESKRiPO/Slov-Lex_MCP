@@ -2,7 +2,7 @@
 
 **MCP server pre prístup k Zbierke zákonov Slovenskej republiky**
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/ESKRiPO/Slov-Lex_MCP)
+[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](https://github.com/ESKRiPO/Slov-Lex_MCP)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue.svg)](https://www.typescriptlang.org/)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.29-green.svg)](https://modelcontextprotocol.io/)
 
@@ -76,8 +76,12 @@ Ak odpoveď obsahuje `has_more: true`, ďalšiu stránku načítaj s hodnotou
 
 **Režimy vyhľadávania:**
 
-- `autocomplete` - rýchle vyhľadávanie v názvoch predpisov
-- `fulltext` - vyhľadávanie aj v nadpisoch paragrafov (napr. "Hromadné prepúšťanie")
+- `autocomplete` - predvolený režim; kombinuje návrhy, vyhľadávanie v názvoch a fulltext, odstráni duplicity a zoradí výsledky podľa relevancie
+- `fulltext` - vyhľadávanie v názvoch a nadpisoch paragrafov (napr. "Hromadné prepúšťanie"), takisto s lokálnym zoradením relevancie
+
+Radenie toleruje bežné rozdiely v tvaroch slov (napr. `daň`/`dani`, `cestná`/`cestnej`), rozvíja skratky `DPH`, `GDPR` a `ZVO` a pri rovnakej téme uprednostní účinný základný predpis pred historickými alebo novelizačnými zákonmi.
+
+Živý audit širšej sady vyhľadávacích scenárov spustíš cez `npm run audit:search`. Kontroluje presné názvy, skloňovanie, text bez diakritiky, skratky, citácie, nadpisy paragrafov, všeobecné heslá, prirodzené otázky, historické predpisy, duplicity aj limity výsledkov.
 
 #### `get_recent`
 
@@ -151,7 +155,7 @@ npm run install:browser
 
 ---
 
-## Aktualizácia z 1.2.5 na 1.3.0
+## Aktualizácia na 1.3.1
 
 ```bash
 cd ~/.local/share/slov-lex-mcp
@@ -160,9 +164,9 @@ npm ci
 npm run check
 ```
 
-Potom reštartuj MCP klienta. Názvy existujúcich piatich nástrojov sa nezmenili;
-`get_version` navyše podporuje stránkovanie a všetky nástroje vracajú aj
-`structuredContent`.
+Potom reštartuj MCP klienta. Názvy existujúcich piatich nástrojov sa nezmenili.
+Verzia 1.3.1 zlepšuje vyhľadávanie prirodzených výrazov, radenie relevancie,
+rozpoznávanie bežných tvarov slov a uprednostňovanie účinných základných predpisov.
 
 ---
 
